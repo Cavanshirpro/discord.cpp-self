@@ -17,6 +17,7 @@ router, examples, tests, installed package and release documentation.
 | Embedded NUL/control characters could truncate requests | Reject control characters in tokens and paths |
 | POSIX select could exceed FD_SETSIZE | Use poll on POSIX; retain Winsock select on Windows |
 | Final reconnect error hid its original cause | Rethrow the last transport/Gateway error |
+| JSON 3.12 made the cache's implicit optional conversion ambiguous | Construct the optional JSON value explicitly |
 | Bare user lookup was denied in live account sessions | Fall back to the profile route only for 403/40001 |
 | Verification responses looked like generic HTTP errors | Add VerificationRequired and never replay the challenge |
 | Live credentials/journals were unsuitable for publication | Ignore credentials/build output; scan the publication manifest |

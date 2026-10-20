@@ -93,12 +93,13 @@ ConanCenter has a reviewed contribution process, not a GitHub secret that pushes
 an arbitrary recipe directly into its index. Once v0.1 is public:
 
 1. Fork [conan-center-index](https://github.com/conan-io/conan-center-index).
+   Review its Contributor License Agreement; acceptance requires the contributor's signature.
 2. Add the recipe in `recipes/discord-cpp-self/all/`, with version mapping in
    `config.yml` and the release source URL/SHA256 in `conandata.yml`.
 3. Adapt the repository-local `exports_sources` recipe to a `source()` method
    using Conan's `get(..., strip_root=True)` and the checksum from `conandata.yml`.
    Keep the dependencies, validation and package consumer test.
-4. Follow the current [ConanCenter contribution guide](https://docs.conan.io/2/guides/ci/conan_center_index.html),
+4. Follow the current [ConanCenter contribution guide](https://github.com/conan-io/conan-center-index/blob/master/CONTRIBUTING.md),
    test the required configurations, and open a pull request.
 
 The included recipe is usable now for local builds and a custom remote. Acceptance
@@ -108,6 +109,12 @@ and any name/policy changes remain the registry maintainers' decision.
 
 The release overlay already works without registry approval. To propose a central
 port:
+
+The curated registry currently expects a mature project: normally a release or
+active public development history of at least six months, or equivalent maturity
+accepted by its maintainers. A new v0.1 should use the working overlay first;
+these steps prepare a later submission rather than promise immediate acceptance.
+
 
 1. Fork [microsoft/vcpkg](https://github.com/microsoft/vcpkg).
 2. Copy the generated release port directory to `ports/discord-cpp-self/`.

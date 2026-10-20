@@ -16,7 +16,8 @@ void MessageCache::insert(Json data) {
     values_[id] = std::move(data);
 }
 std::optional<Json> MessageCache::get(Snowflake id) const {
-    if (const auto found = values_.find(id.value()); found != values_.end()) return found->second;
+    if (const auto found = values_.find(id.value()); found != values_.end())
+        return std::optional<Json>{std::in_place, found->second};
     return {};
 }
 void MessageCache::erase(Snowflake id) {

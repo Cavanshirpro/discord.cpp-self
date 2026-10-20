@@ -47,6 +47,10 @@ conan create . --build=missing -s compiler.cppstd=20
 conan create . --build=missing -s compiler.cppstd=20 -o '&:shared=True'
 ```
 
+On Windows, add `-o 'libcurl/*:with_ssl=schannel'` to use the native certificate
+store. The default OpenSSL configuration on other platforms uses the system CA
+locations; custom TLS builds must provide a valid trust store.
+
 Install Conan in a Python environment that can see the selected compiler. On
 MINGW64, put `C:/msys64/mingw64/bin` on PATH and use Ninja. Dependency builds may
 need Autoconf, Automake, libtool and pkg-config; the Conan recipe can also supply
