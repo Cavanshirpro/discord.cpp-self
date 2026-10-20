@@ -1,0 +1,14 @@
+prefix=${pcfiledir}/@DISCORD_SELF_PC_PREFIX_RELATIVE@
+exec_prefix=${prefix}
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: discord-self
+Description: A C++20 library for Discord user accounts
+URL: https://github.com/Cavanshirpro/discord.cpp-self
+Version: @PROJECT_VERSION@
+Requires: nlohmann_json >= 3.11
+Requires.private: libcurl >= 7.86, zlib
+Libs: -L${libdir} -ldiscord_cpp_self
+Libs.private: @DISCORD_SELF_PC_SYSTEM_LIBS@
+Cflags: -I${includedir} -std=c++20

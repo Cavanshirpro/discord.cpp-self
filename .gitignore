@@ -1,0 +1,17 @@
+/build/
+/.cache/
+/.idea/
+/.vscode/
+.env
+.env.*
+!.env.example
+/test_token
+/test_token.*
+/test_tokens*
+/dist/
+/site/
+*.user
+__pycache__/
+/test_package/build/
+/test_package/CMakeUserPresets.json
+/CMakeUserPresets.json

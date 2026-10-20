@@ -1,0 +1,98 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+name: build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shared: ['OFF', 'ON']
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build libssl-dev libpsl-dev nlohmann-json3-dev zlib1g-dev
+      - name: Build curl with WebSockets
+        run: |
+          curl -fsSL https://curl.se/download/curl-8.23.0.tar.xz -o "$RUNNER_TEMP/curl.tar.xz"
+          tar -xf "$RUNNER_TEMP/curl.tar.xz" -C "$RUNNER_TEMP"
+          cmake -S "$RUNNER_TEMP/curl-8.23.0" -B "$RUNNER_TEMP/curl-build" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/curl" \
+            -DCURL_USE_OPENSSL=ON -DCURL_DISABLE_WEBSOCKETS=OFF \
+            -DBUILD_SHARED_LIBS=ON -DBUILD_CURL_EXE=OFF -DBUILD_TESTING=OFF
+          cmake --build "$RUNNER_TEMP/curl-build" --parallel 2
+          cmake --install "$RUNNER_TEMP/curl-build"
+      - run: cmake --preset default -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DDISCORD_SELF_BUILD_LIVE_EXAMPLES=ON -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/curl"
+      - run: cmake --build --preset default --parallel 2
+      - run: ctest --preset default
+      - name: Installed package consumer
+        run: |
+          cmake --install build/default --prefix "$RUNNER_TEMP/install"
+          cmake -S tests/consumer -B build/consumer -G Ninja -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/install;$RUNNER_TEMP/curl"
+          cmake --build build/consumer
+          build/consumer/consumer
+      - run: python scripts/check_release.py
+      - name: Validate source archives
+        if: matrix.shared == 'OFF'
+        run: python scripts/package_source.py
+      - uses: actions/upload-artifact@v7
+        if: matrix.shared == 'OFF'
+        with:
+          name: source
+          path: build/dist/*
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shared: ['OFF', 'ON']
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-curl
+            mingw-w64-x86_64-nlohmann-json
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-python
+      - run: cmake --preset default -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DDISCORD_SELF_BUILD_LIVE_EXAMPLES=ON
+      - run: cmake --build --preset default --parallel 2
+      - run: ctest --preset default
+      - name: Installed package consumer
+        run: |
+          cmake --install build/default --prefix "$PWD/build/install"
+          cmake -S tests/consumer -B build/consumer -G Ninja -DCMAKE_PREFIX_PATH="$PWD/build/install"
+          cmake --build build/consumer
+          export PATH="$PWD/build/install/bin:$PATH"
+          build/consumer/consumer.exe
+      - run: python scripts/check_release.py

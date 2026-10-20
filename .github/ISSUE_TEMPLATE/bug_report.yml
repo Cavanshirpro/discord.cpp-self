@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a reproducible library problem using fake credentials and data.
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Never include tokens, private messages or raw profile data.
+      render: cpp
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Version, operating system, compiler and libcurl version
+    validations:
+      required: true

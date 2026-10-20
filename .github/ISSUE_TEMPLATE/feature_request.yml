@@ -1,0 +1,10 @@
+name: Feature request
+description: Propose a focused user-account API improvement.
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case and proposed API
+      description: Show a short example and explain the expected behavior.
+    validations:
+      required: true

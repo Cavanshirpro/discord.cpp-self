@@ -1,0 +1,11 @@
+discord.cpp-self
+Copyright (C) 2026 Cavanshirpro
+SPDX-License-Identifier: LGPL-3.0-or-later
+
+Project-owned source code, examples, tests, build scripts and documentation are
+licensed under the GNU Lesser General Public License, version 3 or, at your
+option, any later version. See LICENSE for the complete LGPL terms and COPYING
+for the GNU GPL version 3 terms incorporated by the LGPL.
+
+This is an independent, unofficial project. No Python source is bundled.
+References and separately licensed system dependencies are listed in THIRD_PARTY.md.

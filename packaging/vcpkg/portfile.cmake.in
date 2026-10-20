@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+vcpkg_from_github(
+    OUT_SOURCE_PATH SOURCE_PATH
+    REPO Cavanshirpro/discord.cpp-self
+    REF @SOURCE_COMMIT@
+    SHA512 @SOURCE_SHA512@
+    HEAD_REF main
+)
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
+    OPTIONS
+        -DDISCORD_SELF_BUILD_EXAMPLES=OFF
+        -DDISCORD_SELF_BUILD_TESTS=OFF
+        -DDISCORD_SELF_BUILD_LIVE_EXAMPLES=OFF
+)
+vcpkg_cmake_install()
+vcpkg_cmake_config_fixup(PACKAGE_NAME discordSelf CONFIG_PATH lib/cmake/discordSelf)
+vcpkg_fixup_pkgconfig()
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include" "${CURRENT_PACKAGES_DIR}/debug/share")
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE" "${SOURCE_PATH}/COPYING")
+file(INSTALL "${SOURCE_PATH}/NOTICE" "${SOURCE_PATH}/THIRD_PARTY.md"
+    DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}")

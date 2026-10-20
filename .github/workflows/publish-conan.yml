@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+name: publish-conan
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published GitHub release tag
+        type: string
+        required: true
+        default: v0.1
+      upload:
+        description: Upload to the configured Conan remote (false only builds and tests)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: conan-publish-${{ inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: conan-publish
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
+      CONAN_LOGIN_USERNAME_PUBLISH: ${{ secrets.CONAN_LOGIN_USERNAME }}
+      CONAN_PASSWORD_PUBLISH: ${{ secrets.CONAN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Verify published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$RELEASE_TAG" --json tagName,isDraft --jq 'select(.isDraft == false) | .tagName' | grep -Fx "$RELEASE_TAG"
+          python -c 'import json,os; assert json.load(open("release.json"))["tag"] == os.environ["RELEASE_TAG"]'
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build autoconf automake libtool pkg-config
+      - run: python -m pip install 'conan==2.33.0'
+      - run: conan profile detect
+      - name: Build static and shared packages with consumers
+        run: |
+          conan create . --build=missing -s compiler.cppstd=20 -o '&:shared=False' -c tools.cmake.cmaketoolchain:generator=Ninja -c tools.build:jobs=2
+          conan create . --build=missing -s compiler.cppstd=20 -o '&:shared=True' -c tools.cmake.cmaketoolchain:generator=Ninja -c tools.build:jobs=2
+      - name: Upload only this library
+        if: inputs.upload
+        run: |
+          test -n "$CONAN_REMOTE_URL" && test -n "$CONAN_LOGIN_USERNAME_PUBLISH" && test -n "$CONAN_PASSWORD_PUBLISH"
+          conan remote add publish "$CONAN_REMOTE_URL"
+          conan remote auth publish -cc core:non_interactive=True
+          version=$(python -c 'import json; print(json.load(open("release.json"))["version"])')
+          conan upload "discord-cpp-self/$version" -r publish --confirm -cc core:non_interactive=True
