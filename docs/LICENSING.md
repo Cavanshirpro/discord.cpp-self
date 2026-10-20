@@ -4,6 +4,12 @@ Project-owned source, examples, tests, scripts and documentation are licensed
 under **LGPL-3.0-or-later**, copyright (C) 2026 Cavanshirpro. This means LGPL
 version 3 or, at your option, a later version.
 
+The completed project notice is in [NOTICE](../NOTICE): library name and purpose,
+author, copyright year, LGPL version choice, warranty disclaimer and public
+contact. Source headers point to that notice and both license texts. The
+application examples printed inside the official GPL text are instructional
+license content and remain verbatim; they do not select GPL-only for this library.
+
 `LICENSE` contains the LGPL v3 terms. `COPYING` provides the GPL v3 text that
 LGPL v3 incorporates. `NOTICE` identifies this project's scope;
 `THIRD_PARTY.md` identifies independently licensed dependencies and references.

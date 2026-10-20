@@ -149,5 +149,6 @@ only on the first request. `user()` is populated after Gateway `READY`; use
 
 Copyright (C) 2026 Cavanshirpro. **LGPL-3.0-or-later**.
 See [LICENSE](LICENSE), the incorporated GPL v3 text in [COPYING](COPYING),
+the completed [project copyright notice](NOTICE),
 [distribution guidance](docs/LICENSING.md) and [third-party notices](THIRD_PARTY.md).
 Discord is a trademark of Discord Inc. This project is unofficial and unaffiliated.

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 # Copyright (C) 2026 Cavanshirpro
+# Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 """Validate publication contents without printing matched credentials."""
 import argparse
 import json
@@ -72,6 +73,7 @@ def validate(files, secrets=()):
             require(not re.search("[\u0131\u0130\u011f\u011e\u015f\u015e\u00e7\u00c7\u00f6\u00d6\u00fc\u00dc]", text), f"Non-English project text in {name}")
         if name.endswith((".cpp", ".hpp", ".py", ".ps1")):
             require("SPDX-License-Identifier: LGPL-3.0-or-later" in text, f"Missing SPDX notice in {name}")
+            require("Copyright (C) 2026 Cavanshirpro" in text and "see NOTICE, LICENSE and COPYING" in text, f"Missing completed copyright notice in {name}")
         if name.endswith(".md"):
             prose = re.sub(r"(?ms)^```.*?^```[^\n]*(?:\n|$)", "", text)
             prose = re.sub(r"`[^`\n]*`", "", prose)

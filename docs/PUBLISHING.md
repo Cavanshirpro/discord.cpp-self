@@ -4,6 +4,20 @@ This is Cavanshirpro's personal project. The repository is
 `Cavanshirpro/discord.cpp-self`. The initial GitHub release is **v0.1**, marked
 as a prerelease; package metadata uses **0.1.0**.
 
+## Accounts you need
+
+| Distribution method | Account needed |
+| --- | --- |
+| GitHub Release, CMake, source archives | Your existing GitHub account |
+| vcpkg overlay | No additional publisher account |
+| Building the Conan recipe locally | No registry account |
+| Central vcpkg submission | Existing GitHub account; reviewed pull request |
+| ConanCenter submission | Existing GitHub account and its contributor agreement |
+| Upload to your own Conan remote | An account/service credential on a Conan server, such as Artifactory |
+
+An additional hosting account is optional for v0.1. Users can install from source
+or the overlay immediately, and can build the Conan recipe in their local cache.
+
 ## GitHub repository settings
 
 1. Open **Settings > Actions > General**. Enable GitHub Actions and allow the

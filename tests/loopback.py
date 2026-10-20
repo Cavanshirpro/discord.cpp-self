@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 # Copyright (C) 2026 Cavanshirpro
+# Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 """Dependency-free HTTP + RFC 6455 fixtures. Uses fake tokens and loopback only."""
 import base64
 import hashlib

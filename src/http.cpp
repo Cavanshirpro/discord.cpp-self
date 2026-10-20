@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2026 Cavanshirpro
+// Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 #include "internal.hpp"
 #include <curl/curl.h>
 #include <algorithm>

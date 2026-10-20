@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 # Copyright (C) 2026 Cavanshirpro
+# Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 cmake_minimum_required(VERSION 3.25)
 project(discord_cpp_self VERSION 0.1.0
     DESCRIPTION "A C++20 library for Discord user accounts"
