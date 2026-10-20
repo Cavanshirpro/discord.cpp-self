@@ -21,7 +21,7 @@ def main():
     parser.add_argument("--ref", default="HEAD")
     parser.add_argument("--output", type=Path, default=ROOT / "build" / "vcpkg-overlay")
     args = parser.parse_args()
-    commit = subprocess.run(["git", "rev-parse", f"{args.ref}^{{commit}}"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    commit = subprocess.run(["git", "rev-list", "--max-count=1", args.ref, "--"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise ValueError("Expected a full Git commit")
     def committed(name):

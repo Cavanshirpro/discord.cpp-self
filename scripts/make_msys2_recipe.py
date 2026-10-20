@@ -21,7 +21,7 @@ def main():
     parser.add_argument("--ref", default="HEAD")
     parser.add_argument("--output", type=Path, default=ROOT / "build" / "msys2")
     args = parser.parse_args()
-    commit = subprocess.check_output(["git", "rev-parse", f"{args.ref}^{{commit}}"], cwd=ROOT).decode().strip()
+    commit = subprocess.check_output(["git", "rev-list", "--max-count=1", args.ref, "--"], cwd=ROOT).decode().strip()
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise ValueError("Expected a full Git commit")
 
@@ -45,7 +45,7 @@ def main():
     target = ROOT / "build" / "dist" / f'discord.cpp-self-{metadata["tag"]}-msys2-recipe.zip'
     target.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-        for path in sorted(folder.iterdir()):
+        for path in (folder / "PKGBUILD", folder / "README.md"):
             info = zipfile.ZipInfo(f"msys2/mingw-w64-discord-cpp-self/{path.name}")
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o100644 << 16

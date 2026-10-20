@@ -17,7 +17,7 @@ def main():
     parser.add_argument("--ref", default="HEAD")
     parser.add_argument("--output", type=Path, default=ROOT / "build" / "dist")
     args = parser.parse_args()
-    commit = subprocess.run(["git", "rev-parse", "--verify", f"{args.ref}^{{commit}}"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    commit = subprocess.run(["git", "rev-list", "--max-count=1", args.ref, "--"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
     metadata = json.loads(subprocess.run(["git", "show", f"{commit}:release.json"], cwd=ROOT, check=True, capture_output=True).stdout)
     prefix = f'discord.cpp-self-{metadata["tag"]}'
     args.output.mkdir(parents=True, exist_ok=True)
