@@ -28,6 +28,7 @@ class State:
         self.heartbeats = 0
         self.errors = []
         self.operations = []
+        self.replies = []
 
 
 class Http(http.server.BaseHTTPRequestHandler):
@@ -72,7 +73,11 @@ class Http(http.server.BaseHTTPRequestHandler):
                 state.sends += 1
                 assert body["allowed_mentions"]["parse"] == []
                 assert "embeds" not in body and "embed" not in body
-                if state.sends == 1:
+                if state.mode == "auto_reply":
+                    assert body["allowed_mentions"]["replied_user"] is False
+                    state.replies.append(body)
+                    data = message(content=body["content"])
+                elif state.sends == 1:
                     status, data = 429, {"retry_after": 0.18, "global": True}
                 else:
                     data = message(content=body["content"])
@@ -175,6 +180,7 @@ class Gateway(socketserver.BaseRequestHandler):
             identified = False
             start = None
             triggered = False
+            auto_phase = 0
             while True:
                 opcode, data = receive_frame(sock)
                 if opcode == 8:
@@ -210,6 +216,39 @@ class Gateway(socketserver.BaseRequestHandler):
                     if state.mode == "overflow":
                         for _ in range(30):
                             packet(0, {}, "UNKNOWN")
+                    if state.mode == "auto_reply":
+                        other_channel = message("305", "hello", "555")
+                        other_channel["channel_id"] = "201"
+                        bot = message("306", "hello", "556")
+                        bot["author"]["bot"] = True
+                        for event in (other_channel, bot, message("307", "hello"),
+                                      message("308", "unknown text", "777"),
+                                      message("309", "!autoreply off", "777"),
+                                      message("310", "  HELLO  ", "999"),
+                                      message("310", "  HELLO  ", "999"),
+                                      message("311", "!ping", "999"),
+                                      message("312", "!ping", "998"),
+                                      message("313", "!autoreply off")):
+                            packet(0, event, "MESSAGE_CREATE")
+                if identified and state.mode == "auto_reply":
+                    elapsed = time.monotonic() - start
+                    if auto_phase == 0 and elapsed > 2.2:
+                        # Past the global cooldown, so disabled mode is tested directly.
+                        packet(0, message("315", "hello", "777"), "MESSAGE_CREATE")
+                        auto_phase = 1
+                    if auto_phase == 1 and elapsed > 2.6:
+                        packet(0, message("319", "!autoreply on"), "MESSAGE_CREATE")
+                        packet(0, message("320", "!ping", "997"), "MESSAGE_CREATE")
+                        auto_phase = 2
+                    if auto_phase == 2 and elapsed > 5.0:
+                        # A throttled message replay and a recent user still stay silent.
+                        packet(0, message("312", "!ping", "998"), "MESSAGE_CREATE")
+                        packet(0, message("321", "hi", "999"), "MESSAGE_CREATE")
+                        packet(0, message("322", "!autoreply status"), "MESSAGE_CREATE")
+                        packet(0, message("323", "!autoreply quit"), "MESSAGE_CREATE")
+                        auto_phase = 3
+                    if elapsed > 8:
+                        raise AssertionError("Auto-reply did not honor its owner quit command")
                 if identified and not triggered and time.monotonic() - start > 0.30:
                     triggered = True
                     if state.mode == "basic" and connection == 1:
@@ -233,7 +272,7 @@ class TcpServer(socketserver.ThreadingTCPServer):
 
 
 def main():
-    for mode in ("basic", "invalid", "fatal", "missing_ack", "callback", "overflow", "cancel", "rerun", "no_ready", "no_hello"):
+    for mode in ("basic", "invalid", "fatal", "missing_ack", "callback", "overflow", "cancel", "rerun", "no_ready", "no_hello", "auto_reply"):
         state = State(mode)
         with http.server.ThreadingHTTPServer(("127.0.0.1", 0), Http) as api_server, TcpServer(("127.0.0.1", 0), Gateway) as gateway:
             api_server.state = gateway.state = state
@@ -248,6 +287,11 @@ def main():
             if mode == "basic":
                 assert state.sends == 3 and state.connections == 2
                 assert ("PUT", "/api/channels/200/messages/900/reactions/a%3Ab/@me") in state.operations
+            if mode == "auto_reply":
+                assert state.sends == 2, f"Unexpected auto-reply count: {state.sends}"
+                assert [item["message_reference"]["message_id"] for item in state.replies] == ["310", "320"]
+                assert state.replies[1]["content"] == "Pong!"
+                assert "Auto-reply is off." in result.stdout and "Auto-reply is on." in result.stdout
             print(result.stdout.strip())
 
 

@@ -15,6 +15,8 @@
 #include <thread>
 
 namespace {
+// Advanced manual harness: discovering a target is read-only. --run performs
+// real sends/DMs and may request friendship; inspect the target and docs first.
 using discord::Json;
 using discord::Snowflake;
 std::string test_guild_name() {
@@ -32,6 +34,7 @@ struct Accounts {
     std::array<bool, 2> authenticated{false, false};
 };
 void load(Accounts& accounts, const char* path, bool reporting_only = false) {
+    // Keep both credentials in an ignored local file. Never print their values.
     std::ifstream file(path, std::ios::binary);
     if (!file) throw discord::Error("Cannot read credential file");
     std::string text((std::istreambuf_iterator<char>(file)), {});
@@ -56,6 +59,7 @@ void load(Accounts& accounts, const char* path, bool reporting_only = false) {
     if (accounts.users[0].id == accounts.users[1].id) throw discord::Error("Both credentials belong to one account");
 }
 Json discover(Accounts& accounts) {
+    // Only inspect a guild matching the configured name and shared by both accounts.
     const auto first = accounts.clients[0].fetch_guilds();
     const auto second = accounts.clients[1].fetch_guilds();
     Json result{{"accounts", Json::array()}, {"common_guilds", Json::array()}};
@@ -85,6 +89,7 @@ std::string lower(std::string text) {
     return text;
 }
 Target target(const Json& discovery) {
+    // Fail on ambiguity rather than sending to a guessed category or channel.
     if (discovery["common_guilds"].size() != 1) throw discord::Error("Expected one matching shared test guild");
     const auto& guild = discovery["common_guilds"][0];
     std::vector<Json> categories, channels;
@@ -106,6 +111,7 @@ Json error_result(const discord::HttpError& error) {
     return {{"status", "failed"}, {"http_status", error.status}, {"discord_code", error.code}};
 }
 template<class Function> Json attempt(Function function) {
+    // Turn failures into journal entries; verification challenges are not retried.
     try { auto result = function(); result["status"] = "ok"; return result; }
     catch (const discord::VerificationRequired& error) {
         auto result = error_result(error); result["verification_required"] = true;
@@ -165,6 +171,7 @@ struct Runner {
         for (const auto& token : accounts.tokens) if (text.find(token) != std::string::npos) throw discord::Error("Credential found in output");
     }
     void save() const {
+        // Journals contain account/profile data and belong in an ignored build path.
         const auto text = report.dump(2); safe(text);
         if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
         std::ofstream file(output, std::ios::binary | std::ios::trunc);
@@ -202,6 +209,7 @@ struct Runner {
         }
     }
     void run() {
+        // Each mutation is journaled before execution, then verified with a read.
         std::array<std::optional<discord::Message>, 2> messages;
         for (std::size_t i = 0; i < 2; ++i) {
             const auto label = i == 0 ? "A" : "B";
@@ -349,6 +357,7 @@ struct Runner {
 }
 int main(int argc, char** argv) {
     try {
+        // No action flag means discovery only. Resuming reports never repeats tests.
         if (argc != 2 && !(argc == 4 && (std::string_view(argv[2]) == "--run" || std::string_view(argv[2]) == "--complete-report")))
             throw discord::Error("Usage: discord_self_account_tests <credential-file> [--run|--complete-report <report-file>]");
         Accounts accounts;

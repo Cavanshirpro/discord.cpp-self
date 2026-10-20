@@ -24,7 +24,7 @@ and the necessary accompanying materials. Do not assume that linking statically
 removes these obligations. Read the complete [license](../LICENSE), particularly
 sections 3–4, for the conditions that apply to your distribution.
 
-Release assets for v0.1 (package 0.1.0) are source archives. They do not bundle libcurl, TLS
+Release assets for v0.1.1 (package 0.1.1) are source archives. They do not bundle libcurl, TLS
 libraries, JSON, zlib or runtime DLLs. If you distribute those dependencies, keep
 their own license notices and inspect the licenses of their enabled components.
 

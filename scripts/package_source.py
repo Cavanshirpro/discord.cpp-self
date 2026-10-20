@@ -39,6 +39,9 @@ def main():
         validate(files)
         hashes.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
         print(f"Validated {path.name}: {len(files)} files")
+    notes_path = args.output / "release.md"
+    notes_path.write_bytes(subprocess.run(["git", "show", f"{commit}:release.md"], cwd=ROOT, check=True, capture_output=True).stdout)
+    hashes.append(f"{hashlib.sha256(notes_path.read_bytes()).hexdigest()}  {notes_path.name}")
     (args.output / "SHA256SUMS").write_text("\n".join(hashes) + "\n", encoding="utf-8")
     print(f"Source commit: {commit}")
 

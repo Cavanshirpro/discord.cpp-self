@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Cavanshirpro
 // Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 #include <discord/discord.hpp>
+#include "../examples/auto_reply_handler.hpp"
 #include <atomic>
 #include <iostream>
 #include <thread>
@@ -19,6 +20,16 @@ int main(int argc, char** argv) {
         if (mode == "no_ready" || mode == "no_hello") options.request_timeout = std::chrono::milliseconds{250};
         if (mode == "overflow") options.event_queue_size = 2;
         discord::Client client(options);
+        if (mode == "auto_reply") {
+            // Exercise the example's real policy through HTTP and Gateway fixtures.
+            examples::AutoReplyHandler responder(client, 200);
+            client.on_message([&](const discord::Message& message) { responder(message); });
+            client.run("offline-token"); // The owner's !autoreply quit must stop this.
+            check(!client.is_running(), "Auto-reply owner shutdown failed");
+            check(client.latency().count() >= 0, "Auto-reply blocked Gateway heartbeats");
+            std::cout << "auto_reply passed\n";
+            return 0;
+        }
         if (mode == "cancel") {
             client.login("offline-token");
             std::jthread closer([&] { std::this_thread::sleep_for(std::chrono::milliseconds{150}); client.close(); });

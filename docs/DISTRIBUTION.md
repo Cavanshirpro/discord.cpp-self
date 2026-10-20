@@ -1,6 +1,6 @@
 # Installation and distribution
 
-Release tag: **v0.1**. CMake/Conan/vcpkg version: **0.1.0**.
+Release tag: **v0.1.1**. CMake/Conan/vcpkg version: **0.1.1**.
 All methods expose the same public CMake target, `discord::self`.
 
 | Method | Available from this repository | External registration |
@@ -24,7 +24,7 @@ with TLS and WebSocket support. Then:
 include(FetchContent)
 FetchContent_Declare(discord_self
     GIT_REPOSITORY https://github.com/Cavanshirpro/discord.cpp-self.git
-    GIT_TAG v0.1
+    GIT_TAG v0.1.1
     GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(discord_self)
 target_link_libraries(my_app PRIVATE discord::self)
@@ -60,7 +60,7 @@ After creating the package, add this `conanfile.txt` to your application:
 
 ```ini
 [requires]
-discord-cpp-self/0.1.0
+discord-cpp-self/0.1.1
 [generators]
 CMakeDeps
 CMakeToolchain
@@ -86,7 +86,7 @@ command router without using Discord credentials.
 
 ## vcpkg overlay
 
-Download `discord.cpp-self-v0.1-vcpkg-overlay.zip` from the GitHub Release and
+Download `discord.cpp-self-v0.1.1-vcpkg-overlay.zip` from the GitHub Release and
 extract it. The archive contains `vcpkg-overlay/discord-cpp-self`. Then:
 
 ```bash
@@ -98,7 +98,7 @@ For a manifest-based application:
 ```json
 {
   "name": "my-app",
-  "version-string": "0.1.0",
+  "version-string": "0.1.1",
   "dependencies": ["discord-cpp-self"]
 }
 ```

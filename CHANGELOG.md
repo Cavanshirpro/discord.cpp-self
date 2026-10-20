@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.1 (package 0.1.1) — 2026-10-20
+
+- Add English explanations to all example programs.
+- Add a continuous, channel-scoped auto-responder with editable trigger/reply rules.
+- Add owner controls, Ctrl+C shutdown, cooldowns and bounded replay suppression.
+- Cover the responder policy with fake HTTP/Gateway fixtures.
+- Add an examples guide and direct GitHub Release download links.
+- Publish release.md as both repository documentation and a checksummed release asset.
+
 ## v0.1 (package 0.1.0) — 2026-10-20
 
 Initial early release under LGPL-3.0-or-later.

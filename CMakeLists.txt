@@ -2,7 +2,7 @@
 # Copyright (C) 2026 Cavanshirpro
 # Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 cmake_minimum_required(VERSION 3.25)
-project(discord_cpp_self VERSION 0.1.0
+project(discord_cpp_self VERSION 0.1.1
     DESCRIPTION "A C++20 library for Discord user accounts"
     HOMEPAGE_URL "https://github.com/Cavanshirpro/discord.cpp-self" LANGUAGES CXX)
 
@@ -37,7 +37,7 @@ else()
 endif()
 
 if(DISCORD_SELF_BUILD_EXAMPLES)
-    foreach(example IN ITEMS ping commands rest)
+    foreach(example IN ITEMS ping commands rest auto_reply)
         add_executable(discord_self_${example} examples/${example}.cpp)
         target_link_libraries(discord_self_${example} PRIVATE discord::self)
     endforeach()

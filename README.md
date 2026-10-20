@@ -9,9 +9,14 @@
 A C++20 library for Discord **user accounts**, with a small API you can start using
 in a few lines. A personal project by [Cavanshirpro](https://github.com/Cavanshirpro).
 
-Release **v0.1** (package version `0.1.0`) is an early release. Inspired by
+Release **v0.1.1** (package version `0.1.1`) is an early release. Inspired by
 [discord.py-self](https://github.com/dolfies/discord.py-self), independently written
 in C++, and deliberately different in API design. It does not offer full endpoint parity.
+
+**Download:** [Source ZIP](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.1.1/discord.cpp-self-v0.1.1.zip)
+| [Source TAR.GZ](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.1.1/discord.cpp-self-v0.1.1.tar.gz)
+| [GitHub Releases](https://github.com/Cavanshirpro/discord.cpp-self/releases)
+| [Release notes](release.md)
 
 ```cpp
 #include <discord/discord.hpp>
@@ -96,7 +101,7 @@ Install with `cmake --install <build-directory> --prefix <install-prefix>` and a
 that prefix to `CMAKE_PREFIX_PATH`. Use compatible compiler and runtime ABIs.
 
 You can also use CMake `FetchContent`, the Conan 2 recipe, or the vcpkg overlay
-attached to [v0.1](https://github.com/Cavanshirpro/discord.cpp-self/releases/tag/v0.1).
+attached to [v0.1.1](https://github.com/Cavanshirpro/discord.cpp-self/releases/tag/v0.1.1).
 The [installation guide](docs/DISTRIBUTION.md) has complete examples. ConanCenter
 and the central vcpkg registry are separate submissions; no central listing is
 claimed by this release. Dependencies are not bundled in source archives.
@@ -115,6 +120,19 @@ unset DISCORD_TOKEN
 
 CTest uses only fake credentials and loopback servers. Manual account examples
 are disabled unless `DISCORD_SELF_BUILD_LIVE_EXAMPLES=ON` is set explicitly.
+
+For a responder that keeps listening to other users in one channel, run:
+
+```bash
+export DISCORD_REPLY_CHANNEL='123456789012345678'
+./build/mingw64/discord_self_auto_reply.exe
+```
+
+Set `DISCORD_TOKEN` first as shown above. The example answers `hello`, `hi`,
+`!ping`, `!help` and `!about`. Your own `!autoreply on/off/status/quit` commands
+control it; Ctrl+C stops it too. It filters its own/bot messages, limits reply
+frequency and remembers recent message IDs. The [commented examples guide](examples/README.md)
+explains how to customize and run each example.
 
 ## Commands
 

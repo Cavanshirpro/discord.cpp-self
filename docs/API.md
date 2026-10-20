@@ -1,4 +1,4 @@
-# API reference — 0.1.0
+# API reference — 0.1.1
 
 Include `<discord/discord.hpp>`. Public names live in namespace `discord`.
 `Json` is an alias for `nlohmann::json`.

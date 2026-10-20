@@ -10,7 +10,7 @@ on:
       tag:
         description: Existing release tag
         required: true
-        default: v0.1
+        default: v0.1.1
         type: string
 permissions:
   contents: read
@@ -58,10 +58,11 @@ jobs:
       - run: python scripts/make_vcpkg_overlay.py
       - name: Verify archives and finalize checksums
         run: |
+          cmp release.md build/dist/release.md
           python scripts/check_release.py --archive build/dist/discord.cpp-self-$(python -c 'import json; print(json.load(open("release.json"))["tag"])').tar.gz
           cd build/dist
-          sha256sum *.tar.gz *.zip > SHA256SUMS
-      - name: Publish GitHub prerelease
+          sha256sum *.tar.gz *.zip release.md > SHA256SUMS
+      - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -69,6 +70,6 @@ jobs:
           tag=$(python -c 'import json; print(json.load(open("release.json"))["tag"])')
           prerelease=$(python -c 'import json; print(str(json.load(open("release.json"))["prerelease"]).lower())')
           flags=()
-          if [ "$prerelease" = true ]; then flags+=(--prerelease); fi
+          if [ "$prerelease" = true ]; then flags+=(--prerelease); else flags+=(--latest); fi
           gh release create "$tag" --verify-tag --title "discord.cpp-self $tag" \
-            --notes-file "docs/releases/${tag#v}.md" "${flags[@]}" build/dist/*
+            --notes-file release.md "${flags[@]}" build/dist/*

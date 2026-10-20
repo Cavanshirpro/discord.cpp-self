@@ -6,7 +6,7 @@ layer. Comparison checked on 2026-10-20 against the reference project's
 [message API](https://github.com/dolfies/discord.py-self/blob/master/discord/abc.py)
 and [HTTP implementation](https://github.com/dolfies/discord.py-self/blob/master/discord/http.py).
 
-| Area | discord.cpp-self 0.1.0 |
+| Area | discord.cpp-self 0.1.1 |
 | --- | --- |
 | Language/API | C++20 values, callbacks and synchronous REST; no Python API compatibility |
 | Async model | Dedicated Gateway thread; coroutine REST is planned |

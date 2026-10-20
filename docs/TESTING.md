@@ -15,6 +15,11 @@ user-profile fallback, compressed/fragmented Gateway data, reconnect/resume,
 invalid sessions, missing ACK/HELLO/READY, callback failures, queue overflow,
 cancellation and sequential reuse of one client. See [validation](../tests/VALIDATION.md).
 
+The `auto_reply` loopback scenario exercises the example's real handler: channel,
+bot and own-message filters, normalized triggers, global/per-user cooldowns,
+replay suppression, pause/resume/status/quit controls and heartbeat progress.
+Only fake messages are sent to localhost; no real account is involved.
+
 Packaging checks build a standalone `tests/consumer` using the installed
 `find_package(discordSelf)` configuration. Both static and shared configurations
 run the offline suite in CI.

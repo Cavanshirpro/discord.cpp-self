@@ -1,8 +1,8 @@
 # GitHub and package publishing setup
 
 This is Cavanshirpro's personal project. The repository is
-`Cavanshirpro/discord.cpp-self`. The initial GitHub release is **v0.1**, marked
-as a prerelease; package metadata uses **0.1.0**.
+`Cavanshirpro/discord.cpp-self`. The current GitHub release is **v0.1.1**, with
+package version **0.1.1**. It is a normal Release; v0.1 remains a historical prerelease.
 
 ## Accounts you need
 
@@ -43,15 +43,16 @@ files and live journals stay outside Git and release archives.
 Push `main`, inspect **Actions > build** and **Actions > packages**, then push
 the annotated release tag as described in [Releasing](RELEASING.md). The
 **publish** workflow runs for `v*` tags. It verifies Linux/Windows static/shared
-builds, the Conan package and the vcpkg overlay before creating the prerelease.
+builds, the Conan package and the vcpkg overlay before creating the release.
 
-The release contains two source archives, a vcpkg overlay ZIP, SHA256 checksums,
-and the versioned English release notes. Downloadable source is built from the
+The release contains two source archives, a vcpkg overlay ZIP, `release.md` and
+SHA256 checksums for all four files. English release notes also appear on the
+Release page. Downloadable source is built from the
 tag's commit, not the working directory. These are source packages, not a
 universal Windows/Linux binary SDK.
 
 To retry publication, open **Actions > publish > Run workflow**, select the
-workflow branch and enter the existing tag `v0.1`. Existing releases are not
+workflow branch and enter the existing tag `v0.1.1`. Existing releases are not
 silently replaced. For a code correction after publication, increment the
 version, write new release notes and create a new tag.
 
@@ -78,11 +79,11 @@ In this GitHub repository:
    | `CONAN_LOGIN_USERNAME` | The remote's service account/user name |
    | `CONAN_PASSWORD` | Its token or password with upload permission |
 
-4. Open **Actions > publish-conan > Run workflow**. Use tag `v0.1` and leave
+4. Open **Actions > publish-conan > Run workflow**. Use tag `v0.1.1` and leave
    **upload** unchecked for a build-only trial. This builds and executes consumers
    for static and shared Release packages on the Linux runner.
 5. Run again with **upload** checked to authenticate and upload
-   `discord-cpp-self/0.1.0`. Only this library is uploaded; public dependencies
+   `discord-cpp-self/0.1.1`. Only this library is uploaded; public dependencies
    continue to come from ConanCenter.
 
 The workflow verifies that the matching GitHub release exists. It uses
@@ -95,7 +96,7 @@ After upload, users add the remote:
 
 ```bash
 conan remote add cavanshirpro <your-conan-api-url>
-conan install --requires=discord-cpp-self/0.1.0 --build=missing -s compiler.cppstd=20
+conan install --requires=discord-cpp-self/0.1.1 --build=missing -s compiler.cppstd=20
 ```
 
 Private remotes additionally require user authentication. A recipe alone still
@@ -104,7 +105,7 @@ allows consumers to build missing binary configurations from source.
 ## Submit to ConanCenter
 
 ConanCenter has a reviewed contribution process, not a GitHub secret that pushes
-an arbitrary recipe directly into its index. Once v0.1 is public:
+an arbitrary recipe directly into its index. Once v0.1.1 is public:
 
 1. Fork [conan-center-index](https://github.com/conan-io/conan-center-index).
    Review its Contributor License Agreement; acceptance requires the contributor's signature.
@@ -126,7 +127,7 @@ port:
 
 The curated registry currently expects a mature project: normally a release or
 active public development history of at least six months, or equivalent maturity
-accepted by its maintainers. A new v0.1 should use the working overlay first;
+accepted by its maintainers. A new v0.1.1 should use the working overlay first;
 these steps prepare a later submission rather than promise immediate acceptance.
 
 

@@ -61,6 +61,7 @@ def validate(files, secrets=()):
     require(re.fullmatch(r"v[0-9]+\.[0-9]+(?:\.[0-9]+)?", metadata["tag"]), "Invalid release tag")
     require(tuple(map(int, metadata["tag"][1:].split("."))) + ((0,) if metadata["tag"].count(".") == 1 else ()) == tuple(map(int, version.split("."))), "Release tag does not match package version")
     require(f'docs/releases/{metadata["tag"][1:]}.md' in files, "Missing versioned release notes")
+    require(files.get("release.md") == files[f'docs/releases/{metadata["tag"][1:]}.md'], "release.md must match the current versioned release notes")
     require(f'version = "{version}"'.encode() in files["conanfile.py"], "Conan version does not match CMake")
     require(json.loads(files["packaging/vcpkg/vcpkg.json"])["version-semver"] == version, "vcpkg version does not match CMake")
     for name, data in files.items():

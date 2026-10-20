@@ -28,10 +28,13 @@ Release builds. Unit suite: 82 checks. Loopback suite:
 8. The same client runs again after closing its previous run.
 9. Missing READY/RESUMED times out even while heartbeat ACKs arrive.
 10. Missing HELLO times out.
+11. The auto-reply example ignores other channels, bot/own messages and unknown
+    triggers; normalizes ASCII triggers; applies global/per-user cooldowns;
+    suppresses replayed IDs; obeys owner pause/resume/status/quit; and keeps heartbeats alive.
 
 The install/export path was tested separately for static and shared libraries:
 install, configure `tests/consumer` with `find_package(discordSelf)`, build, then
-execute the consumer. Both print `0.1.0` and exit successfully.
+execute the consumer. Both print the package version and exit successfully.
 
 All integration fixtures bind to `127.0.0.1` on ephemeral ports, use a fake token,
 and depend only on Python's standard library. They do not contact Discord.
