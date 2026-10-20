@@ -26,7 +26,8 @@ git push origin v0.1.1
 
 The [publish workflow](../.github/workflows/publish.yml) reruns the build and
 package checks for the tag, downloads validated source archives, generates the
-vcpkg overlay from the exact commit, and publishes a GitHub Release with notes,
+vcpkg overlay/MSYS2 recipe from the exact commit, collects tested native MSYS2
+packages, and publishes a GitHub Release with notes,
 downloadable `release.md` and SHA256 checksums. `release.json` selects whether
 the release is a prerelease; normal releases are marked as latest.
 It uses GitHub's built-in token; no personal access token
@@ -34,7 +35,8 @@ is needed. A failed build prevents publication.
 
 The job can also be dispatched manually with an existing tag. It refuses a tag
 that disagrees with `release.json` or points at another commit. It does not
-overwrite an existing published release. If only publication failed, fix the
+overwrite an existing published release; an existing draft can be completed after
+its replacement artifacts pass all checks. If only publication failed, fix the
 repository setting and rerun the failed jobs. Do not move an already published
 tag; release a new version for source corrections.
 
@@ -52,7 +54,8 @@ downloadable port. The generator reads its template and metadata from that commi
 
 Source packaging uses committed Git content, never the whole working directory.
 Credentials, raw journals and build output are excluded and checked again in
-both archives. No dependency DLLs or compiler-specific binary SDK is included.
+both source archives. Dependency DLLs are not bundled: the MSYS2 packages declare
+their runtime dependencies for pacman. Native packages are toolchain-specific.
 Future binary releases must preserve LGPL notices and corresponding source.
 
 See [publishing setup](PUBLISHING.md) for GitHub settings and Conan remote upload.

@@ -81,6 +81,11 @@ ctest --preset default
 Check that `curl --version` lists `ws` and `wss`. Older distribution packages may
 omit WebSockets. See the [build guide](docs/BUILDING.md) for shared builds and installation.
 
+The GitHub Release also provides native **MINGW64** and **UCRT64** MSYS2 packages.
+Install the matching `.pkg.tar.zst` with `pacman -U`; see the
+[MSYS2 package guide](packaging/msys2/README.md). A central MSYS2 `pacman -S`
+listing requires a separate reviewed submission.
+
 ## Add it to your project
 
 The simplest way to start is to add the source to your project:
@@ -162,6 +167,7 @@ only on the first request. `user()` is populated after Gateway `READY`; use
 - [Comparison](docs/COMPARISON.md), [roadmap](ROADMAP.md) and [changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md), [security](SECURITY.md) and [release process](docs/RELEASING.md)
 - [Package installation](docs/DISTRIBUTION.md) and [GitHub publishing setup](docs/PUBLISHING.md)
+- [Editor hover help](docs/EDITORS.md) and [MSYS2 packages](packaging/msys2/README.md)
 
 ## License
 

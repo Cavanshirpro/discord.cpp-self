@@ -55,13 +55,19 @@ jobs:
         with:
           name: source
           path: build/dist
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: msys2-*
+          merge-multiple: true
+          path: build/dist
       - run: python scripts/make_vcpkg_overlay.py
+      - run: python scripts/make_msys2_recipe.py
       - name: Verify archives and finalize checksums
         run: |
           cmp release.md build/dist/release.md
           python scripts/check_release.py --archive build/dist/discord.cpp-self-$(python -c 'import json; print(json.load(open("release.json"))["tag"])').tar.gz
           cd build/dist
-          sha256sum *.tar.gz *.zip release.md > SHA256SUMS
+          sha256sum *.tar.gz *.zip *.pkg.tar.zst release.md > SHA256SUMS
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -71,5 +77,12 @@ jobs:
           prerelease=$(python -c 'import json; print(str(json.load(open("release.json"))["prerelease"]).lower())')
           flags=()
           if [ "$prerelease" = true ]; then flags+=(--prerelease); else flags+=(--latest); fi
-          gh release create "$tag" --verify-tag --title "discord.cpp-self $tag" \
-            --notes-file release.md "${flags[@]}" build/dist/*
+          if gh release view "$tag" --json isDraft > "$RUNNER_TEMP/existing-release.json" 2>/dev/null; then
+            python -c 'import json,sys; assert json.load(open(sys.argv[1]))["isDraft"], "A published release will not be overwritten"' "$RUNNER_TEMP/existing-release.json"
+            gh release upload "$tag" build/dist/* --clobber
+            gh release edit "$tag" --title "discord.cpp-self $tag" --notes-file release.md \
+              --draft=false --prerelease="$prerelease" --latest="$([ "$prerelease" = true ] && echo false || echo true)"
+          else
+            gh release create "$tag" --verify-tag --title "discord.cpp-self $tag" \
+              --notes-file release.md "${flags[@]}" build/dist/*
+          fi

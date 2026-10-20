@@ -8,6 +8,8 @@
 - Cover the responder policy with fake HTTP/Gateway fixtures.
 - Add an examples guide and direct GitHub Release download links.
 - Publish release.md as both repository documentation and a checksummed release asset.
+- Document public APIs for editor hover, add VS Code/clangd setup and verify real LSP hovers.
+- Add source-building MSYS2 recipes and native MINGW64/UCRT64 package publication.
 
 ## v0.1 (package 0.1.0) — 2026-10-20
 

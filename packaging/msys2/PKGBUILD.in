@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+# Copyright (C) 2026 Cavanshirpro
+# Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
+# Maintainer: Cavanshirpro (https://github.com/Cavanshirpro)
+
+_realname=discord-cpp-self
+_source_commit=@SOURCE_COMMIT@
+pkgbase=mingw-w64-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=@PACKAGE_VERSION@
+pkgrel=1
+pkgdesc="A C++20 library for Discord user accounts (mingw-w64)"
+arch=('any')
+mingw_arch=('mingw64' 'ucrt64')
+url='https://github.com/Cavanshirpro/discord.cpp-self'
+license=('spdx:LGPL-3.0-or-later')
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-curl"
+         "${MINGW_PACKAGE_PREFIX}-nlohmann-json"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-ninja")
+checkdepends=("${MINGW_PACKAGE_PREFIX}-python")
+options=('!debug')
+source=("${_realname}-${pkgver}.tar.gz::${url}/archive/${_source_commit}.tar.gz")
+sha512sums=('@SOURCE_SHA512@')
+
+build() {
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+    cmake -S "discord.cpp-self-${_source_commit}" -B "build-${MSYSTEM}" -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
+      -DBUILD_SHARED_LIBS=ON \
+      -DDISCORD_SELF_BUILD_EXAMPLES=OFF \
+      -DDISCORD_SELF_BUILD_TESTS=ON \
+      -DDISCORD_SELF_BUILD_LIVE_EXAMPLES=OFF
+  cmake --build "build-${MSYSTEM}" --parallel 2
+}
+
+check() {
+  ctest --test-dir "build-${MSYSTEM}" --output-on-failure
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install "build-${MSYSTEM}"
+  install -Dm644 "discord.cpp-self-${_source_commit}/README.md" \
+    "${pkgdir}${MINGW_PREFIX}/share/doc/${_realname}/README.md"
+  install -Dm644 "discord.cpp-self-${_source_commit}/docs/EDITORS.md" \
+    "${pkgdir}${MINGW_PREFIX}/share/doc/${_realname}/EDITORS.md"
+}

@@ -9,6 +9,8 @@ Start with the [quick example](../README.md), then choose a topic.
 | [Architecture](ARCHITECTURE.md) | Threads, ownership, caches and rate limits |
 | [Testing](TESTING.md) | Offline fixtures and manual account checks |
 | [Examples](../examples/README.md) | Commented samples and the continuous auto-responder |
+| [Editors](EDITORS.md) | VS Code IntelliSense, clangd and public hover documentation |
+| [MSYS2 packages](../packaging/msys2/README.md) | Local pacman installation, recipes and official submissions |
 | [Current release](../release.md) | Release notes and direct download links |
 | [Comparison](COMPARISON.md) | Coverage relative to discord.py-self |
 | [Licensing](LICENSING.md) | LGPL scope and distribution files |

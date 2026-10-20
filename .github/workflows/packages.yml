@@ -54,3 +54,53 @@ jobs:
             -DVCPKG_MANIFEST_MODE=OFF -DVCPKG_TARGET_TRIPLET=x64-linux
           cmake --build build/vcpkg-consumer
           build/vcpkg-consumer/consumer
+  msys2:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - msystem: MINGW64
+            arch: mingw64
+            prefix: mingw-w64-x86_64
+          - msystem: UCRT64
+            arch: ucrt64
+            prefix: mingw-w64-ucrt-x86_64
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            git base-devel
+            ${{ matrix.prefix }}-gcc
+            ${{ matrix.prefix }}-cmake
+            ${{ matrix.prefix }}-ninja
+            ${{ matrix.prefix }}-curl
+            ${{ matrix.prefix }}-nlohmann-json
+            ${{ matrix.prefix }}-zlib
+            ${{ matrix.prefix }}-python
+      - run: python scripts/make_msys2_recipe.py
+      - name: Build, test and install MSYS2 package
+        env:
+          MINGW_ARCH: ${{ matrix.arch }}
+        run: |
+          cd build/msys2/mingw-w64-discord-cpp-self
+          makepkg-mingw --syncdeps --cleanbuild --force --noconfirm
+          pacman -U --noconfirm ./*.pkg.tar.zst
+      - name: Installed package consumer
+        run: |
+          cmake -S tests/consumer -B build/msys2-consumer -G Ninja
+          cmake --build build/msys2-consumer
+          build/msys2-consumer/consumer.exe
+      - uses: actions/upload-artifact@v7
+        with:
+          name: msys2-${{ matrix.msystem }}
+          path: build/msys2/mingw-w64-discord-cpp-self/*.pkg.tar.zst

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+# Copyright (C) 2026 Cavanshirpro
+# Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
+CompileFlags:
+  # GCC may default to C++20 and omit -std from compile_commands.json, while
+  # clangd still defaults to C++17. Keep the editor on this project's standard.
+  Add: [-std=c++20, -fparse-all-comments, -fretain-comments-from-system-headers]
+Documentation:
+  CommentFormat: Doxygen

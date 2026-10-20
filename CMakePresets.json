@@ -8,6 +8,7 @@
       "binaryDir": "${sourceDir}/build/mingw64",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
         "CMAKE_CXX_COMPILER": "C:/msys64/mingw64/bin/g++.exe",
         "CMAKE_MAKE_PROGRAM": "C:/msys64/mingw64/bin/ninja.exe",
         "CMAKE_PREFIX_PATH": "C:/msys64/mingw64"
@@ -17,7 +18,7 @@
       "name": "default",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/default",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CMAKE_EXPORT_COMPILE_COMMANDS": true }
     }
   ],
   "buildPresets": [

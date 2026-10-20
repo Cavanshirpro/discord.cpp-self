@@ -14,6 +14,7 @@ package version **0.1.1**. It is a normal Release; v0.1 remains a historical pre
 | Central vcpkg submission | Existing GitHub account; reviewed pull request |
 | ConanCenter submission | Existing GitHub account and its contributor agreement |
 | Upload to your own Conan remote | An account/service credential on a Conan server, such as Artifactory |
+| MSYS2 release packages / official submission | Existing GitHub account; official inclusion requires a reviewed PR |
 
 An additional hosting account is optional for v0.1. Users can install from source
 or the overlay immediately, and can build the Conan recipe in their local cache.
@@ -45,8 +46,9 @@ the annotated release tag as described in [Releasing](RELEASING.md). The
 **publish** workflow runs for `v*` tags. It verifies Linux/Windows static/shared
 builds, the Conan package and the vcpkg overlay before creating the release.
 
-The release contains two source archives, a vcpkg overlay ZIP, `release.md` and
-SHA256 checksums for all four files. English release notes also appear on the
+The release contains two source archives, a vcpkg overlay ZIP, an MSYS2 recipe ZIP,
+native MINGW64/UCRT64 MSYS2 packages, `release.md` and SHA256 checksums for all
+seven files. English release notes also appear on the
 Release page. Downloadable source is built from the
 tag's commit, not the working directory. These are source packages, not a
 universal Windows/Linux binary SDK.
@@ -142,6 +144,18 @@ these steps prepare a later submission rather than promise immediate acceptance.
 
 Central registry submissions are not performed by this repository's release
 workflow. Never advertise a central package badge before the port is accepted.
+
+## MSYS2 packages
+
+The package workflow builds and tests the generated source recipe on MINGW64 and
+UCRT64, installs each package with pacman, and compiles an installed-package
+consumer. Publish downloads these binary artifacts and adds them to the release
+with the generated recipe and checksums. No MSYS2 account or publishing secret is
+needed to provide these project-hosted packages.
+
+Official `pacman -S` distribution requires a PR against MSYS2's MINGW-packages
+repository. The [MSYS2 guide](../packaging/msys2/README.md) has the exact commands
+and submission steps. Until accepted, downloaded packages use `pacman -U`.
 
 ## Other distribution channels
 

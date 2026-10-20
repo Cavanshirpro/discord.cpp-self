@@ -6,5 +6,6 @@
 #include "commands.hpp"
 
 namespace discord {
+/// @brief Semantic package version compiled into these headers.
 inline constexpr std::string_view version = "0.1.1";
 }

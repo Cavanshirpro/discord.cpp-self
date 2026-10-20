@@ -10,6 +10,7 @@ All methods expose the same public CMake target, `discord::self`.
 | Conan 2 | Recipe and package consumer test | Optional Conan remote; ConanCenter requires review |
 | vcpkg | Commit-pinned overlay asset | Central registry requires review |
 | pkg-config | Installed `discord-self.pc` | None |
+| MSYS2 | Native packages and a source-building PKGBUILD | Official pacman repository requires review |
 
 There is no central ConanCenter/vcpkg listing claimed by v0.1. GitHub Packages
 does not provide a native Conan or vcpkg registry; use GitHub Releases for the
@@ -133,6 +134,10 @@ Dependency development packages must provide their own pkg-config files. CMake
 is the recommended consumer interface on Windows.
 
 ## Verify downloads
+
+For native MSYS2 package installation with `pacman -U`, building a recipe, or
+proposing a package to the official repository, see [MSYS2](../packaging/msys2/README.md).
+The installed headers retain their [editor hover help](EDITORS.md).
 
 On Linux/MSYS2, run `sha256sum -c SHA256SUMS` beside the downloaded assets. On
 PowerShell, use `Get-FileHash <asset> -Algorithm SHA256` and compare it with the

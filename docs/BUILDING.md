@@ -29,7 +29,7 @@ The `mingw64` preset expects `C:/msys64`; the `default` preset uses the shell's 
 | CMake option | Default | Purpose |
 | --- | --- | --- |
 | `BUILD_SHARED_LIBS` | `OFF` | DLL/shared object instead of a static archive |
-| `DISCORD_SELF_BUILD_EXAMPLES` | Top-level only | Ping, commands and REST examples |
+| `DISCORD_SELF_BUILD_EXAMPLES` | Top-level only | Ping, commands, REST and auto-reply examples |
 | `DISCORD_SELF_BUILD_TESTS` | Top-level only | Offline tests; Python is required |
 | `DISCORD_SELF_BUILD_LIVE_EXAMPLES` | `OFF` | Manual programs that can contact real accounts |
 
@@ -59,3 +59,7 @@ target_link_libraries(example PRIVATE discord::self)
 For a Windows DLL installation, add both its `bin` directory and the matching
 MSYS2 runtime directory to `PATH`. Use compatible compiler/runtime ABIs.
 See [licensing](LICENSING.md) before distributing a linked application.
+
+Prebuilt MSYS2 packages and a source-building recipe are described in the
+[MSYS2 guide](../packaging/msys2/README.md). Hover documentation and editor
+configuration are covered in [Editors](EDITORS.md).

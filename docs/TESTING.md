@@ -24,6 +24,11 @@ Packaging checks build a standalone `tests/consumer` using the installed
 `find_package(discordSelf)` configuration. Both static and shared configurations
 run the offline suite in CI.
 
+The editor job uses clangd over `tests/hover.cpp` to assert real documentation in
+type/method/field hovers. Public headers are indexed first, as by an editor's
+language service. The MSYS2 package jobs build, test, install and consume native
+MINGW64/UCRT64 packages. These checks never use Discord credentials.
+
 ## Optional connection probe
 
 Configure with `-DDISCORD_SELF_BUILD_LIVE_EXAMPLES=ON`. Set `DISCORD_TOKEN`, then

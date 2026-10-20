@@ -24,8 +24,9 @@ and the necessary accompanying materials. Do not assume that linking statically
 removes these obligations. Read the complete [license](../LICENSE), particularly
 sections 3–4, for the conditions that apply to your distribution.
 
-Release assets for v0.1.1 (package 0.1.1) are source archives. They do not bundle libcurl, TLS
-libraries, JSON, zlib or runtime DLLs. If you distribute those dependencies, keep
+Release assets for v0.1.1 include source archives and native MSYS2 library packages.
+Dependency DLLs are not bundled; pacman resolves the native packages' declared
+dependencies. If you distribute libcurl, TLS libraries, JSON, zlib or runtime DLLs, keep
 their own license notices and inspect the licenses of their enabled components.
 
 Unmodified license texts are supplied through GitHub's license API, matching
