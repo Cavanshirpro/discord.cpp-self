@@ -149,3 +149,25 @@ roughly 46.8 ms at the 95th percentile to approximately 33.9 ms, with a 33.33 ms
 mean (30 FPS). This measures sending, not the remote client's rendered FPS.
 Static and DLL offline suites, an installed CMake consumer and publication
 credential/link checks passed. Live data and the personal test application remain outside the source distribution.
+
+## Audio control and echo follow-up, 2026-10-29
+
+A user reported that joining the test account caused repeated conversation
+audio even after using the personal TUI's deaf control. Review found that the
+Gateway flag did not disable local waveOut playback or watched-stream audio.
+The personal tool also enabled local monitoring alongside the regular client.
+Received frames had no direct path into the outgoing file/device encoder.
+
+The fix applies deaf state to every audio transport and the local monitor,
+flushes queued output when disabled, and separates local playback from outgoing
+mute. Outgoing file audio now defaults to the channel only; stream audio is an
+explicit separate destination. The updated personal TUI starts local output off.
+
+In the designated channel, voice and watched Go Live audio/video were received.
+Timed deaf/playback/mute changes were checked against native snapshots. Deaf
+windows did not increase received audio counters, requested playback remained
+inactive while deaf, muted windows did not increase transmitted audio counters,
+and the outgoing Go Live audio counter stayed zero with channel-only routing.
+The user then explicitly confirmed that the echo had stopped. This is a live
+confirmation for that setup, not a universal acoustic echo-cancellation claim.
+Private controls, full snapshots and verification reports remain external.

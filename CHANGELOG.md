@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.1 (package 0.2.1) - 2026-10-29
+
+- Apply deaf state to remote stream audio and local playback, clearing queued PCM/waveOut buffers.
+- Add independent local playback and outgoing mute controls and snapshot states.
+- Send file audio to voice only by default; make Go Live audio a separate explicit destination.
+- Cover default output routing, mute and deafened stream rejection in offline media tests.
+
 ## v0.2.0 (package 0.2.0) - 2026-10-28
 
 - Add an optional C++ RTP/DAVE media backend using official libdave, OpenSSL, Opus and native FFmpeg; remove Node/Python/Rust runtime experiments.

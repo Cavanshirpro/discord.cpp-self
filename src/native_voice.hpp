@@ -192,6 +192,10 @@ inline Json receiver_wants(const std::map<uint32_t, RemoteSource> &sources,
     wants["pixelCounts"] = std::move(pixels);
     return wants;
 }
+inline bool audio_output_enabled(const MediaOptions &options, bool screen) {
+    return !options.muted && !options.audio_source.empty() &&
+           (screen ? options.stream_audio : options.voice_audio);
+}
 class Voice {
     std::unique_ptr<SocketWeb> ws_;
     std::atomic_bool &stop_;
@@ -376,7 +380,7 @@ class Voice {
     void signal_output() {
         ws_->send(Json{{"op", 5},
                        {"d",
-                        {{"speaking", output_ && !options_.audio_source.empty() ? 1 : 0},
+                        {{"speaking", output_ && audio_output_enabled(options_, screen_) ? 1 : 0},
                          {"delay", 0},
                          {"ssrc", ssrc_}}}});
         ws_->send(Json{{"op", 12},
@@ -975,6 +979,17 @@ class Voice {
 
   public:
     bool force_keyframe = false;
+    void set_audio_state(bool receive_audio, bool muted) {
+        if (options_.receive_audio != receive_audio) {
+            options_.receive_audio = receive_audio;
+            wants_ = Clock::time_point{};
+        }
+        if (options_.muted != muted) {
+            options_.muted = muted;
+            if (ready_)
+                signal_output();
+        }
+    }
     void set_sources(const MediaOptions &options) {
         options_ = options;
         last_sent_ = {};
@@ -1074,7 +1089,7 @@ class Voice {
             throw Error("Voice session startup timed out");
         if (crypto_.ready()) {
             udp_receive();
-            if ((options_.receive_video || options_.receive_audio) && now >= wants_) {
+            if (now >= wants_) {
                 request_video();
                 wants_ = now + std::chrono::seconds{3};
             }
@@ -1091,7 +1106,7 @@ class Voice {
     bool can_send() const { return output_ && ready_ && version_ && daveEncryptorHasKeyRatchet(encryptor_); }
     bool connected() const { return ready_; }
     void audio(View clear) {
-        if (!can_send())
+        if (!can_send() || !audio_output_enabled(options_, screen_))
             return;
         auto data = dave_encrypt(false, clear);
         if (data.empty())

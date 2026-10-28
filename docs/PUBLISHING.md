@@ -1,8 +1,8 @@
 # GitHub and package publishing setup
 
 This is Cavanshirpro's personal project. The repository is
-`Cavanshirpro/discord.cpp-self`. The current GitHub release is **v0.2.0**, with
-package version **0.2.0**. It is a normal Release; v0.1 remains a historical prerelease.
+`Cavanshirpro/discord.cpp-self`. The current GitHub release is **v0.2.1**, with
+package version **0.2.1**. It is a normal Release; v0.1 remains a historical prerelease.
 
 ## Accounts you need
 
@@ -54,7 +54,7 @@ tag's commit, not the working directory. These are source packages, not a
 universal Windows/Linux binary SDK.
 
 To retry publication, open **Actions > publish > Run workflow**, select the
-workflow branch and enter the existing tag `v0.2.0`. Existing releases are not
+workflow branch and enter the existing tag `v0.2.1`. Existing releases are not
 silently replaced. For a code correction after publication, increment the
 version, write new release notes and create a new tag.
 
@@ -81,11 +81,11 @@ In this GitHub repository:
    | `CONAN_LOGIN_USERNAME` | The remote's service account/user name |
    | `CONAN_PASSWORD` | Its token or password with upload permission |
 
-4. Open **Actions > publish-conan > Run workflow**. Use tag `v0.2.0` and leave
+4. Open **Actions > publish-conan > Run workflow**. Use tag `v0.2.1` and leave
    **upload** unchecked for a build-only trial. This builds and executes consumers
    for static and shared Release packages on the Linux runner.
 5. Run again with **upload** checked to authenticate and upload
-   `discord-cpp-self/0.2.0`. Only this library is uploaded; public dependencies
+   `discord-cpp-self/0.2.1`. Only this library is uploaded; public dependencies
    continue to come from ConanCenter.
 
 The workflow verifies that the matching GitHub release exists. It uses
@@ -98,7 +98,7 @@ After upload, users add the remote:
 
 ```bash
 conan remote add cavanshirpro <your-conan-api-url>
-conan install --requires=discord-cpp-self/0.2.0 --build=missing -s compiler.cppstd=20
+conan install --requires=discord-cpp-self/0.2.1 --build=missing -s compiler.cppstd=20
 ```
 
 Private remotes additionally require user authentication. A recipe alone still
@@ -107,7 +107,7 @@ allows consumers to build missing binary configurations from source.
 ## Submit to ConanCenter
 
 ConanCenter has a reviewed contribution process, not a GitHub secret that pushes
-an arbitrary recipe directly into its index. Once v0.2.0 is public:
+an arbitrary recipe directly into its index. Once v0.2.1 is public:
 
 1. Fork [conan-center-index](https://github.com/conan-io/conan-center-index).
    Review its Contributor License Agreement; acceptance requires the contributor's signature.
@@ -129,7 +129,7 @@ port:
 
 The curated registry currently expects a mature project: normally a release or
 active public development history of at least six months, or equivalent maturity
-accepted by its maintainers. A new v0.2.0 should use the working overlay first;
+accepted by its maintainers. A new v0.2.1 should use the working overlay first;
 these steps prepare a later submission rather than promise immediate acceptance.
 
 

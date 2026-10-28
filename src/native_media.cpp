@@ -115,7 +115,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
     auto voice_state = [&](bool leave = false) {
         send(4, {{"guild_id", guild()},
                  {"channel_id", leave ? Json(nullptr) : Json(channel())},
-                 {"self_mute", false},
+                 {"self_mute", options.muted},
                  {"self_deaf", deaf},
                  {"self_video", !leave && options.camera && !options.video_source.empty()}});
     };
@@ -149,6 +149,10 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
     bool playing = false, configured_record = false;
     uint64_t received_audio = 0, received_video = 0;
     auto receive = [&](ReceivedFrame f) {
+        // Watched streams use independent voice transports. A Gateway deaf flag
+        // alone does not silence their packets, local playback or recordings.
+        if (f.codec == "opus" && deaf)
+            return;
         if (f.codec == "opus")
             ++received_audio;
         else
@@ -333,6 +337,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                             session = d.at("session_id").get<std::string>();
                             joined = true;
                             deaf = d.value("self_deaf", deaf);
+                            options.muted = d.value("self_mute", options.muted);
                         }
                     } else {
                         participants.erase(id);
@@ -377,7 +382,15 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                     auto op = command.value("op", std::string{});
                     if (op == "set_deaf") {
                         deaf = command.at("deaf").get<bool>();
+                        recorder.set_deaf(deaf);
                         voice_state();
+                    } else if (op == "set_muted") {
+                        options.muted = command.at("muted").get<bool>();
+                        voice_state();
+                    } else if (op == "set_audio_playback") {
+                        const bool enabled = command.at("enabled").get<bool>();
+                        recorder.set_playback(enabled);
+                        options.play_received_audio = enabled;
                     } else if (op == "watch_stream") {
                         auto key = command.at("stream_key").get<std::string>();
                         ignored_streams.erase(key);
@@ -465,6 +478,8 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                 voice_state();
             }
             create_connections();
+            recorder.set_deaf(deaf);
+            recorder.set_playback(options.play_received_audio);
             if (options.watch_streams)
                 for (auto &[id, p] : participants)
                     if (id != self && p.value("self_stream", false)) {
@@ -474,6 +489,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                     }
             for (auto it = connections.begin(); it != connections.end();) {
                 try {
+                    it->second->set_audio_state(options.receive_audio && !deaf, options.muted);
                     it->second->recognize(users());
                     it->second->tick();
                     ++it;
@@ -569,6 +585,11 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                            {"channel_id", channel()},
                            {"self_user_id", self},
                            {"self_deaf", deaf},
+                           {"self_mute", options.muted},
+                           {"play_received_audio", options.play_received_audio},
+                           {"audio_playback_active", recorder.playback_enabled()},
+                           {"voice_audio", options.voice_audio},
+                           {"stream_audio", options.stream_audio},
                            {"recording", recorder.active()},
                            {"participants", Json::array()},
                            {"streams", Json::array()},

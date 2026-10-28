@@ -8,5 +8,5 @@
 
 namespace discord {
 /// @brief Semantic package version compiled into these headers.
-inline constexpr std::string_view version = "0.2.0";
+inline constexpr std::string_view version = "0.2.1";
 }

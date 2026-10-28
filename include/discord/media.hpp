@@ -24,6 +24,9 @@ struct MediaOptions {
     bool camera = true;
     bool go_live = true;
     bool loop = true;
+    bool muted = false; ///< Suppress all outgoing file/device audio, independently of receiving.
+    bool voice_audio = true; ///< Send the audio source to the voice channel.
+    bool stream_audio = false; ///< Explicit opt-in; sending the same source twice can sound like echo.
     int width = 1280; ///< Even output width, 16..3840.
     int height = 720; ///< Even output height, 16..2160; source is fitted with letterboxing.
     int fps = 30; ///< 1..60.
@@ -72,6 +75,11 @@ public:
     void unwatch_stream(std::string stream_key);
     /// @brief Native backend: change local deaf state without muting microphone output.
     void set_deaf(bool deaf);
+    /// @brief Mute all outgoing audio without stopping video or received audio.
+    void set_muted(bool muted);
+    /// @brief Enable/disable local received-audio playback, including queued samples.
+    /// Receiving/recording continues; deaf state overrides playback on every transport.
+    void set_audio_playback(bool enabled);
     /// @brief Finish the active recording, preserving the received portion.
     void stop_recording();
     /// @brief Replace the outgoing files. Empty paths disable that media source.

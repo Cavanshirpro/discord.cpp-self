@@ -73,16 +73,33 @@ class Monitor {
     int64_t played_ = 0;
 
   public:
-    explicit Monitor(bool enabled) : enabled_(enabled) {
-        if (!enabled)
+    explicit Monitor(bool enabled) { set_enabled(enabled); }
+    bool enabled() const { return enabled_; }
+    void set_enabled(bool enabled) {
+        if (enabled == enabled_)
             return;
+        if (!enabled) {
+            enabled_ = false;
+            slots_.clear();
 #ifdef _WIN32
-        WAVEFORMATEX format{WAVE_FORMAT_PCM, 2, 48000, 192000, 4, 16, 0};
-        if (waveOutOpen(&device_, WAVE_MAPPER, &format, 0, 0, CALLBACK_NULL) != MMSYSERR_NOERROR)
-            throw Error("Cannot open local audio output");
+            if (device_)
+                waveOutReset(device_);
+#endif
+            return;
+        }
+#ifdef _WIN32
+        if (!device_) {
+            WAVEFORMATEX format{WAVE_FORMAT_PCM, 2, 48000, 192000, 4, 16, 0};
+            if (waveOutOpen(&device_, WAVE_MAPPER, &format, 0, 0, CALLBACK_NULL) != MMSYSERR_NOERROR)
+                throw Error("Cannot open local audio output");
+        }
 #else
         throw Error("Local audio monitoring currently requires Windows waveOut");
 #endif
+        start_ = Clock::now();
+        played_ = 0;
+        slots_.clear();
+        enabled_ = true;
     }
     ~Monitor() {
 #ifdef _WIN32
@@ -165,6 +182,7 @@ class Recorder {
     int audio_seconds_ = 0, video_seconds_ = 0;
     size_t audio_packets_ = 0;
     bool active_ = false;
+    bool deaf_ = false;
     std::vector<std::future<Json>> finalizers_;
     bool keyframe(const ReceivedFrame &f, Bytes &configured) {
         auto key = f.source + ":" + std::to_string(f.ssrc);
@@ -211,6 +229,17 @@ class Recorder {
         }
     }
     bool active() const { return active_; }
+    bool playback_enabled() const { return monitor_.enabled(); }
+    void set_deaf(bool value) {
+        if (deaf_ == value)
+            return;
+        deaf_ = value;
+        monitor_.set_enabled(options_.play_received_audio && !deaf_);
+    }
+    void set_playback(bool value) {
+        monitor_.set_enabled(value && !deaf_);
+        options_.play_received_audio = value;
+    }
     void start(const std::filesystem::path &directory, int audio, int video) {
         if (active_)
             throw Error("A recording is already active");
@@ -234,6 +263,8 @@ class Recorder {
     }
     void frame(ReceivedFrame f) {
         if (f.codec == "opus") {
+            if (deaf_)
+                return;
             auto key = f.source + ":" + std::to_string(f.ssrc);
             if (!decoders_.contains(key) && decoders_.size() >= 64)
                 decoders_.erase(decoders_.begin());

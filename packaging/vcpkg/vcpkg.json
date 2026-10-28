@@ -1,6 +1,6 @@
 {
   "name": "discord-cpp-self",
-  "version-semver": "0.2.0",
+  "version-semver": "0.2.1",
   "description": "A C++20 library for Discord user accounts",
   "homepage": "https://github.com/Cavanshirpro/discord.cpp-self",
   "license": "LGPL-3.0-or-later",

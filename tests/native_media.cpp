@@ -48,6 +48,15 @@ int main(int argc, char **argv) {
                 "Audio-only subscription requested video");
         require(!receiver_wants(remote, selected, "self", false, true, 921600).contains("1"),
                 "Disabled audio was subscribed");
+        MediaOptions routing;
+        routing.audio_source = "tone.opus";
+        require(audio_output_enabled(routing, false) && !audio_output_enabled(routing, true),
+                "Default audio duplicated into microphone and Go Live");
+        routing.stream_audio = true;
+        require(audio_output_enabled(routing, true), "Explicit stream audio was unavailable");
+        routing.muted = true;
+        require(!audio_output_enabled(routing, false) && !audio_output_enabled(routing, true),
+                "Muting did not suppress both outgoing transports");
         std::vector<uint16_t> received;
         const auto now = Clock::now();
         auto push = [&](uint16_t sequence) {
@@ -100,6 +109,16 @@ int main(int argc, char **argv) {
         require(size > 0, "Opus tone encoding failed");
         compressed.resize(size);
         auto first = Clock::now();
+        recorder.set_deaf(true);
+        recorder.set_playback(true);
+        require(!recorder.playback_enabled(), "Playback bypassed deaf state for stream audio");
+        recorder.set_playback(false);
+        require(!recorder.playback_enabled(), "Deaf state left local playback enabled");
+        // A watched-stream voice transport may still deliver audio after the
+        // main Gateway is deafened. It must never reach the local mix/WAV.
+        for (int i = 0; i < 5; ++i)
+            recorder.frame({"stream-remote", "1", "opus", 8, uint32_t(i * 960), compressed, first});
+        recorder.set_deaf(false);
         for (int i = 0; i < 50; ++i) {
             ReceivedFrame f{"voice",
                             "1",

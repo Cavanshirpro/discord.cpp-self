@@ -6,11 +6,11 @@ layer. Comparison checked on 2026-10-20 against the reference project's
 [message API](https://github.com/dolfies/discord.py-self/blob/master/discord/abc.py)
 and [HTTP implementation](https://github.com/dolfies/discord.py-self/blob/master/discord/http.py).
 
-The table describes v0.2.0, including its optional
+The table describes v0.2.1, including its optional
 [camera/microphone/Go Live backend](MEDIA.md) through C++ RTP/DAVE and native FFmpeg.
 The future user-client scope is tracked in the [research inventory](USER_API_SCOPE.md).
 
-| Area | discord.cpp-self 0.2.0 |
+| Area | discord.cpp-self 0.2.1 |
 | --- | --- |
 | Language/API | C++20 values, callbacks and synchronous REST; no Python API compatibility |
 | Async model | Dedicated Gateway thread; coroutine REST is planned |

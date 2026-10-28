@@ -44,6 +44,9 @@ inline discord::MediaOptions config(const std::filesystem::path &p) {
     o.camera = c.value("camera", true);
     o.go_live = c.value("go_live", true);
     o.loop = c.value("loop", true);
+    o.muted = c.value("muted", false);
+    o.voice_audio = c.value("voice_audio", true);
+    o.stream_audio = c.value("stream_audio", false);
     o.width = c.value("width", 1280);
     o.height = c.value("height", 720);
     o.fps = c.value("fps", 30);

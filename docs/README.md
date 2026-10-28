@@ -23,5 +23,5 @@ Start with the [quick example](../README.md), then choose a topic.
 | [Live findings](LIVE_TESTS.md) | Anonymized initial account test results |
 | [Review](REVIEW.md) | Corrections made during the user-API review |
 
-Release v0.2.0 uses package version 0.2.0. This documentation describes the shipped API;
+Release v0.2.1 uses package version 0.2.1. This documentation describes the shipped API;
 it does not imply complete endpoint coverage or universal account compatibility.

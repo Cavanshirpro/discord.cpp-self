@@ -11,10 +11,10 @@ verify its checksum, and use the shell matching your compiler:
 
 ```bash
 # MSYS2 MINGW64, matching the existing project toolchain:
-pacman -U ./mingw-w64-x86_64-discord-cpp-self-0.2.0-1-any.pkg.tar.zst
+pacman -U ./mingw-w64-x86_64-discord-cpp-self-0.2.1-1-any.pkg.tar.zst
 
 # MSYS2 UCRT64, for an application built with the UCRT64 compiler:
-pacman -U ./mingw-w64-ucrt-x86_64-discord-cpp-self-0.2.0-1-any.pkg.tar.zst
+pacman -U ./mingw-w64-ucrt-x86_64-discord-cpp-self-0.2.1-1-any.pkg.tar.zst
 ```
 
 Choose one matching package, not both for a single application. MSYS2 resolves
@@ -31,7 +31,7 @@ repository. Installing a downloaded local package uses `pacman -U`.
 
 ## Build from the generated recipe
 
-Download/extract `discord.cpp-self-v0.2.0-msys2-recipe.zip`. Enter its
+Download/extract `discord.cpp-self-v0.2.1-msys2-recipe.zip`. Enter its
 `msys2/mingw-w64-discord-cpp-self` directory in the matching MSYS2 shell:
 
 ```bash
@@ -50,7 +50,7 @@ from `PKGBUILD.in`, whose placeholders must be replaced before use.
 From a public committed checkout, maintainers generate it with:
 
 ```bash
-python scripts/make_msys2_recipe.py --ref v0.2.0
+python scripts/make_msys2_recipe.py --ref v0.2.1
 ```
 
 ## Official MSYS2 submission

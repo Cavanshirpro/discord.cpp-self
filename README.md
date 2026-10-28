@@ -9,14 +9,14 @@
 A C++20 library for Discord **user accounts**, with a small API you can start using
 in a few lines. A personal project by [Cavanshirpro](https://github.com/Cavanshirpro).
 
-Release **v0.2.0** (package version `0.2.0`) is an early release. Inspired by
+Release **v0.2.1** (package version `0.2.1`) is an early release. Inspired by
 [discord.py-self](https://github.com/dolfies/discord.py-self), independently written
 in C++, and deliberately different in API design. The goal is a complete
 user-client communication layer; current coverage remains partial. See the
 [research inventory](docs/USER_API_SCOPE.md) and [roadmap](ROADMAP.md).
 
-**Download:** [Source ZIP](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.0/discord.cpp-self-v0.2.0.zip)
-| [Source TAR.GZ](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.0/discord.cpp-self-v0.2.0.tar.gz)
+**Download:** [Source ZIP](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/discord.cpp-self-v0.2.1.zip)
+| [Source TAR.GZ](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/discord.cpp-self-v0.2.1.tar.gz)
 | [GitHub Releases](https://github.com/Cavanshirpro/discord.cpp-self/releases)
 | [Release notes](release.md)
 
@@ -46,7 +46,7 @@ int main() {
 - Static/shared builds and an installed CMake package named `discordSelf`.
 - Optional camera, microphone, Go Live, receive/record and stream viewers via `MediaSession`; see [native media setup](docs/MEDIA_NATIVE.md).
 
-Release v0.2.0 includes an optional native C++ media backend. Prebuilt packages
+Release v0.2.1 includes an optional native C++ media backend. Prebuilt packages
 provide the REST/Gateway core; media is enabled in source builds. There is no custom embed sender, bot-token mode,
 file upload or coroutine interface. REST calls are synchronous; Gateway I/O runs
 on a separate thread. See the [feature comparison](docs/COMPARISON.md).
@@ -110,7 +110,7 @@ Install with `cmake --install <build-directory> --prefix <install-prefix>` and a
 that prefix to `CMAKE_PREFIX_PATH`. Use compatible compiler and runtime ABIs.
 
 You can also use CMake `FetchContent`, the Conan 2 recipe, or the vcpkg overlay
-attached to [v0.2.0](https://github.com/Cavanshirpro/discord.cpp-self/releases/tag/v0.2.0).
+attached to [v0.2.1](https://github.com/Cavanshirpro/discord.cpp-self/releases/tag/v0.2.1).
 The [installation guide](docs/DISTRIBUTION.md) has complete examples. ConanCenter
 and the central vcpkg registry are separate submissions; no central listing is
 claimed by this release. Dependencies are not bundled in source archives.

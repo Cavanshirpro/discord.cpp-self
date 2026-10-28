@@ -93,7 +93,9 @@ media.set_sources("other-video.mp4", "other-audio.mp3");
 media.join(discord::Snowflake("OTHER_GUILD_ID"), discord::Snowflake("OTHER_CHANNEL_ID"));
 media.record("recordings/take-1", 20, 10); // directory must be empty
 media.stop_recording();
-media.set_deaf(false);
+media.set_deaf(false); // incoming audio on every transport, including watched streams
+media.set_audio_playback(false); // local speakers only; receiving/recording continues
+media.set_muted(true); // outgoing file/device audio only; video continues
 media.watch_stream(state["streams"][0]["key"].get<std::string>());
 media.unwatch_stream(state["streams"][0]["key"].get<std::string>());
 ```
@@ -109,6 +111,24 @@ Set `emit_media_packets=true` for optional encoded Opus/H264/H265 frame callback
 They include source, user ID, SSRC, RTP timestamp and base64 payload up to 256 KiB.
 Larger frames report `payload_omitted=true`; frames still reach recording.
 Keep callbacks short to avoid delaying media. There is no IPC payload copy by default.
+
+## Independent audio controls
+
+`set_deaf(true)` rejects received Opus on the channel and all watched stream
+transports, stops local playback immediately and clears queued speaker audio.
+Video can continue. `set_audio_playback(false)` affects only local output;
+received audio remains available for recording/callbacks. `set_muted(true)`
+suppresses outgoing source audio on both destinations and updates speaking state.
+No received frame is fed into the outgoing file/device source.
+
+The default is `voice_audio=true`, `stream_audio=false`: file audio is sent once
+through the channel. To send it only inside Go Live, select the opposite flags.
+Enabling both sends two copies; a viewer who hears the channel and stream can
+perceive echo. `muted` is the initial outgoing mute state. Snapshots expose
+`self_mute`, `play_received_audio`, `audio_playback_active`, `voice_audio` and
+`stream_audio` separately. Deaf overrides local output without discarding its
+requested setting. Local speaker playback defaults to off; an application used
+alongside an already-playing Discord client should leave it off unless wanted.
 
 ## Physical capture
 

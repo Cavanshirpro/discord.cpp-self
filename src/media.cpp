@@ -94,6 +94,8 @@ void MediaSession::unwatch_stream(std::string key) {
     command({{"op", "unwatch_stream"}, {"stream_key", std::move(key)}});
 }
 void MediaSession::set_deaf(bool value) { command({{"op", "set_deaf"}, {"deaf", value}}); }
+void MediaSession::set_muted(bool value) { command({{"op", "set_muted"}, {"muted", value}}); }
+void MediaSession::set_audio_playback(bool value) { command({{"op", "set_audio_playback"}, {"enabled", value}}); }
 void MediaSession::stop_recording() { command({{"op", "stop_recording"}}); }
 void MediaSession::set_sources(std::string video, std::string audio) {
     if (video.find('\0') != std::string::npos || audio.find('\0') != std::string::npos)

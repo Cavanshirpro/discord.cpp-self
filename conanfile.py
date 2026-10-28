@@ -14,7 +14,7 @@ required_conan_version = ">=2.21"
 
 class DiscordSelfConan(ConanFile):
     name = "discord-cpp-self"
-    version = "0.2.0"
+    version = "0.2.1"
     description = "A C++20 library for Discord user accounts"
     license = "LGPL-3.0-or-later"
     url = "https://github.com/Cavanshirpro/discord.cpp-self"
