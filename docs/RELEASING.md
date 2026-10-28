@@ -1,6 +1,6 @@
 # Releasing
 
-The current release is **v0.1.1**, with package version **0.1.1**. The original
+The current release is **v0.2.0**, with package version **0.2.0**. The original
 v0.1 is a historical prerelease. Release metadata is recorded in [release.json](../release.json);
 `scripts/check_release.py` checks it against the public header, CMake, Conan,
 vcpkg and versioned release notes.
@@ -18,8 +18,8 @@ vcpkg and versioned release notes.
 6. Tag the tested commit and push the tag:
 
 ```bash
-git tag -a v0.1.1 -m "discord.cpp-self v0.1.1"
-git push origin v0.1.1
+git tag -a v0.2.0 -m "discord.cpp-self v0.2.0"
+git push origin v0.2.0
 ```
 
 ## What publish does
@@ -43,9 +43,9 @@ tag; release a new version for source corrections.
 To reproduce source archives from a committed revision:
 
 ```bash
-python scripts/package_source.py --ref v0.1.1
-python scripts/check_release.py --archive build/dist/discord.cpp-self-v0.1.tar.gz
-python scripts/make_vcpkg_overlay.py --ref v0.1.1
+python scripts/package_source.py --ref v0.2.0
+python scripts/check_release.py --archive build/dist/discord.cpp-self-v0.2.0.tar.gz
+python scripts/make_vcpkg_overlay.py --ref v0.2.0
 ```
 
 The overlay generator needs the commit to be available on GitHub. It calculates

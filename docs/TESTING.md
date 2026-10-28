@@ -1,5 +1,10 @@
 # Testing
 
+The optional C++ media backend adds offline CTest `native_media`: authenticated
+RTP/tamper checks, sequence repair, Opus timeline decoding, source caching and a
+decodable ten-second video. It uses native FFmpeg and never opens Discord.
+See [media validation](MEDIA_NATIVE.md#verification-and-references).
+
 ## Offline suite
 
 ```bash

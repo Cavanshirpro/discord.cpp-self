@@ -17,3 +17,13 @@ __pycache__/
 /test_package/build/
 /test_package/CMakeUserPresets.json
 /CMakeUserPresets.json
+/recordings/
+/live-tests/
+/discord.cpp-mytesting/
+node_modules/
+*.wav
+*.mp4
+*.mkv
+*.h264
+*.h265
+*.opus

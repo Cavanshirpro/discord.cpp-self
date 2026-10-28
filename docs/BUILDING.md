@@ -32,6 +32,7 @@ The `mingw64` preset expects `C:/msys64`; the `default` preset uses the shell's 
 | `DISCORD_SELF_BUILD_EXAMPLES` | Top-level only | Ping, commands, REST and auto-reply examples |
 | `DISCORD_SELF_BUILD_TESTS` | Top-level only | Offline tests; Python is required |
 | `DISCORD_SELF_BUILD_LIVE_EXAMPLES` | `OFF` | Manual programs that can contact real accounts |
+| `DISCORD_SELF_NATIVE_MEDIA` | `OFF` | C++ RTP/DAVE backend; requires libdave, MLS++, OpenSSL and Opus |
 
 ## Shared builds and installation
 

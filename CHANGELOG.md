@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.2.0 (package 0.2.0) - 2026-10-28
+
+- Add an optional C++ RTP/DAVE media backend using official libdave, OpenSSL, Opus and native FFmpeg; remove Node/Python/Rust runtime experiments.
+- Cache H264/Opus file encodes for independent low-cost loops; send camera/audio/Go Live, receive H264/H265/Opus, and support explicit native device capture.
+- Keep personal C++ TUI controls, account configuration and recordings external to the library distribution.
+- Expose participant/viewer snapshots, optional encoded frame callbacks, RTP/RTX repair, RTCP feedback and sender pacing statistics.
+- Add private recording manifests, bounded native capture queues, process-tree cleanup and offline codec/transport/recording tests.
+- Preserve received conversation audio when video subscriptions use `any: 0` by explicitly requesting Opus streams; cover audio-only and disabled-audio subscriptions.
+
+- Define user-client API scope and a researched roadmap covering settings, commerce, quests and developer-presented verification.
+
 ## v0.1.1 (package 0.1.1) — 2026-10-20
 
 - Add English explanations to all example programs.

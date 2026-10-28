@@ -12,6 +12,7 @@ event flow, object lifetimes and the important API choices. No token is included
 | [auto_reply_handler.hpp](auto_reply_handler.hpp) | Editable reply rules, owner controls, cooldowns and replay filtering |
 | [check_connection.cpp](check_connection.cpp) | An opt-in read-only connection/heartbeat probe |
 | [account_tests.cpp](account_tests.cpp) | Advanced opt-in two-account tests and a local result journal |
+| [media.cpp](media.cpp) | Opt-in camera, microphone and Go Live; see [setup](../docs/MEDIA.md) |
 
 ## Build and run
 

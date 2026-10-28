@@ -58,7 +58,8 @@ private:
 class Gateway {
 public:
     Gateway(ClientOptions options, std::string token, std::atomic_bool& stop,
-            std::atomic<std::int64_t>& latency, std::function<void(RawEvent)> emit);
+            std::atomic<std::int64_t>& latency, std::function<void(RawEvent)> emit,
+            std::function<std::vector<Json>()> outbound = {});
     void run();
 private:
     void connect();
@@ -67,6 +68,7 @@ private:
     std::atomic_bool& stop_;
     std::atomic<std::int64_t>& latency_;
     std::function<void(RawEvent)> emit_;
+    std::function<std::vector<Json>()> outbound_;
     std::string session_;
     std::string resume_url_;
     std::optional<std::int64_t> sequence_;

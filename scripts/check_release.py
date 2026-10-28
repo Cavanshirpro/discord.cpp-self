@@ -13,7 +13,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = re.compile(rb"(?:mfa\.[A-Za-z0-9_-]{20,}|[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,})")
-FORBIDDEN = {".git", "build", "dist", ".cache", "__pycache__", ".env"}
+FORBIDDEN = {".git", "build", "dist", ".cache", "__pycache__", ".env",
+             "node_modules", "recordings", "live-tests", "discord.cpp-mytesting"}
 
 
 def require(condition, message):

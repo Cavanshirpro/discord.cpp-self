@@ -4,6 +4,13 @@
 libcurl handles HTTPS/WebSockets, nlohmann/json handles payloads, and a persistent
 zlib inflater decodes the Gateway stream.
 
+The optional `MediaSession` owns an independent account Gateway and
+C++ RTP/DAVE transports. libdave, OpenSSL and Opus supply native cryptography and
+audio decoding. FFmpeg processes encode/mux media, supervised with Windows jobs
+or POSIX process groups. There is no Node/Python/Rust runtime. No media packets
+pass through `Client`'s Gateway. See
+[native media architecture and setup](MEDIA_NATIVE.md).
+
 ## Threads
 
 `run(token)` dispatches callbacks in registration order on its calling thread.

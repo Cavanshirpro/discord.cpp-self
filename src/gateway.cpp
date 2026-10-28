@@ -100,8 +100,9 @@ std::vector<std::string> Inflater::push(std::string_view data) {
     return messages;
 }
 Gateway::Gateway(ClientOptions options, std::string token, std::atomic_bool& stop,
-                 std::atomic<std::int64_t>& latency, std::function<void(RawEvent)> emit)
-    : options_(std::move(options)), token_(std::move(token)), stop_(stop), latency_(latency), emit_(std::move(emit)) {}
+                 std::atomic<std::int64_t>& latency, std::function<void(RawEvent)> emit,
+                 std::function<std::vector<Json>()> outbound)
+    : options_(std::move(options)), token_(std::move(token)), stop_(stop), latency_(latency), emit_(std::move(emit)), outbound_(std::move(outbound)) {}
 
 void Gateway::run() {
     init_curl();
@@ -232,6 +233,7 @@ void Gateway::connect() {
     };
     while (!stop_) {
         if (!hello && Clock::now() > hello_deadline) throw TransportError("Gateway HELLO timed out");
+        if (established_ && outbound_) for (const auto& packet : outbound_()) send(curl.get(), packet, stop_);
         if (hello && !established_ && Clock::now() > ready_deadline) throw TransportError("Gateway READY/RESUMED timed out");
         if (Clock::now() >= heartbeat_due) {
             if (waiting_ack) throw TransportError("Gateway heartbeat acknowledgement timed out");

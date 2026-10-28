@@ -1,7 +1,12 @@
-# API reference — 0.1.1
+# API reference — 0.2.0
 
 Include `<discord/discord.hpp>`. Public names live in namespace `discord`.
 `Json` is an alias for `nlohmann::json`.
+
+The optional `MediaOptions` and `MediaSession` API is described in the
+[native media guide](MEDIA_NATIVE.md), including snapshot/watch/deaf/record
+controls plus source/channel changes. It uses C++ RTP/DAVE, native libraries and FFmpeg;
+it does not reuse `Client`'s Gateway connection.
 
 ## Client lifecycle
 

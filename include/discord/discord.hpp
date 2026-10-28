@@ -4,8 +4,9 @@
 #pragma once
 #include "client.hpp"
 #include "commands.hpp"
+#include "media.hpp"
 
 namespace discord {
 /// @brief Semantic package version compiled into these headers.
-inline constexpr std::string_view version = "0.1.1";
+inline constexpr std::string_view version = "0.2.0";
 }

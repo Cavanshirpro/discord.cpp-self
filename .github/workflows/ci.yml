@@ -18,6 +18,19 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  native_media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build libcurl4-openssl-dev nlohmann-json3-dev zlib1g-dev libssl-dev libopus-dev ffmpeg
+      - shell: pwsh
+        run: ./scripts/setup-cpp-media.ps1 -ToolchainBin '' -Jobs 2
+      - run: cmake -S . -B build/cpp-media -DDISCORD_SELF_BUILD_TESTS=ON
+      - run: cmake --build build/cpp-media --target discord_self_native_media_tests -j 2
+      - run: ctest --test-dir build/cpp-media -R native_media --output-on-failure
   editor:
     runs-on: ubuntu-latest
     timeout-minutes: 10

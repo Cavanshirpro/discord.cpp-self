@@ -10,7 +10,7 @@ on:
       tag:
         description: Existing release tag
         required: true
-        default: v0.1.1
+        default: v0.2.0
         type: string
 permissions:
   contents: read
