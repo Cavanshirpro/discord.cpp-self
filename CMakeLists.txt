@@ -40,6 +40,12 @@ if(DISCORD_SELF_CURL_IMPERSONATE)
         message(FATAL_ERROR "DISCORD_SELF_CURL_IMPERSONATE requires libcurl exporting curl_easy_impersonate; set CURL_DIR to a compatible package.")
     endif()
     target_compile_definitions(discord_cpp_self PRIVATE DISCORD_SELF_CURL_IMPERSONATE=1)
+    # Other dependencies (notably vcpkg's nlohmann/json) can expose a shared
+    # include directory containing stock curl headers. Always compile against
+    # the same provider headers used by the capability link check above.
+    set_property(TARGET discord_cpp_self PROPERTY NO_SYSTEM_FROM_IMPORTED TRUE)
+    target_include_directories(discord_cpp_self BEFORE PRIVATE
+        $<TARGET_PROPERTY:CURL::libcurl,INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
 target_include_directories(discord_cpp_self PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
