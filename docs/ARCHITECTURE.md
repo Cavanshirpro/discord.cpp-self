@@ -49,6 +49,15 @@ Requests have timeouts and bounded response sizes. Redirects are not followed;
 TLS verification uses libcurl's trust configuration. A custom endpoint receives
 the credential, so configure one only deliberately.
 
+One REST client retains a libcurl easy handle across requests. Request options
+are reset after each transfer, including on failure, while libcurl retains its
+connection, DNS/TLS caches and server-issued cookies. Cookies stay in memory;
+no browser cookie store or cookie file is read or written. A credential change
+discards the complete HTTP session. Same-token login retains it, and separate
+Clients have separate cookie stores. The User-Agent identifies this library and
+its configured project version. This is normal session management, not browser
+or TLS fingerprint impersonation, and does not guarantee account acceptance.
+
 429 responses establish route/shared-bucket/global deadlines before retry
 decisions. Reauthenticating with the same credential retains those deadlines.
 A successful mutation remains successful even if its response establishes a long

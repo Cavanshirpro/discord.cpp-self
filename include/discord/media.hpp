@@ -80,6 +80,9 @@ public:
     /// @brief Enable/disable local received-audio playback, including queued samples.
     /// Receiving/recording continues; deaf state overrides playback on every transport.
     void set_audio_playback(bool enabled);
+    /// @brief Toggle camera and Go Live in place. Keeps voice, receiving and recording connected.
+    /// Enabling an output requires a nonempty video source. Go Live waits for the previous stop acknowledgement.
+    void set_outputs(bool camera, bool go_live);
     /// @brief Finish the active recording, preserving the received portion.
     void stop_recording();
     /// @brief Replace the outgoing files. Empty paths disable that media source.

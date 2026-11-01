@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Cavanshirpro
 // Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 #include "native_recording.hpp"
+#include "native_stream_state.hpp"
 #include <iostream>
 #include <numbers>
 using namespace discord;
@@ -16,6 +17,15 @@ int main(int argc, char **argv) {
         auto root = std::filesystem::absolute(path_from(argv[1]));
         std::filesystem::create_directories(root);
         std::atomic_bool cancel = false;
+        StreamState stream;
+        require(stream.begin(), "Go Live did not start");
+        const auto stale_epoch = stream.epoch;
+        require(stream.accepts(stale_epoch), "Current transport was rejected");
+        require(!stream.begin(), "Duplicate Go Live create");
+        require(stream.stop() && !stream.stop(), "Go Live stop was not idempotent");
+        require(!stream.begin() && !stream.accepts(stale_epoch), "Stop race resurrected an old stream");
+        stream.reset(); // STREAM_DELETE acknowledgment.
+        require(stream.begin() && !stream.accepts(stale_epoch), "A stale stream transport was attached after restart");
         TransportCrypto crypto;
         crypto.key(Json::array({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
                                 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}));
@@ -49,6 +59,22 @@ int main(int argc, char **argv) {
         require(!receiver_wants(remote, selected, "self", false, true, 921600).contains("1"),
                 "Disabled audio was subscribed");
         MediaOptions routing;
+        routing.video_source = "video.h264";
+        require(video_output_enabled(routing, false) && video_output_enabled(routing, true), "Initial video outputs unavailable");
+        routing.camera = false;
+        require(!video_output_enabled(routing, false) && video_output_enabled(routing, true), "Camera disabled Go Live");
+        routing.camera = true;
+        routing.go_live = false;
+        require(video_output_enabled(routing, false) && !video_output_enabled(routing, true), "Go Live disabled camera");
+        routing.video_source.clear();
+        require(!video_output_enabled(routing, false), "Video without a source was enabled");
+        try {
+            Voice invalid("invalid/endpoint", "offline-token", "1", "2", "offline-session", "3", "camera", "2",
+                          true, false, routing, cancel, {}, [](ReceivedFrame) {}, [](const Json&) {});
+            require(false, "Invalid voice endpoint was accepted");
+        } catch (const Error& e) {
+            require(std::string(e.what()) == "Invalid voice endpoint", "Unexpected voice constructor failure");
+        }
         routing.audio_source = "tone.opus";
         require(audio_output_enabled(routing, false) && !audio_output_enabled(routing, true),
                 "Default audio duplicated into microphone and Go Live");

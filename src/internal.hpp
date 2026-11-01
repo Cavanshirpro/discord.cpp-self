@@ -7,6 +7,7 @@
 #include <deque>
 #include <map>
 #include <mutex>
+#include <memory>
 #include <thread>
 #include <unordered_map>
 #include <zlib.h>
@@ -28,14 +29,18 @@ void interruptible_wait(std::chrono::milliseconds delay, const std::atomic_bool&
 class Rest {
 public:
     explicit Rest(ClientOptions options, Transport transport = {});
+    ~Rest();
     void login(std::string token);
     Json request(std::string method, std::string path, Json body = nullptr);
     void cancel() noexcept { cancelled_ = true; }
 private:
     Response perform(const Request& request);
+    struct HttpSession;
+    std::unique_ptr<HttpSession> session_;
     ClientOptions options_;
     Transport transport_;
     std::string token_;
+    bool unauthorized_ = false;
     std::mutex mutex_;
     std::atomic_bool cancelled_{false};
     std::map<std::string, Clock::time_point> blocked_;

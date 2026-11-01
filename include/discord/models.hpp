@@ -142,12 +142,16 @@ struct Attachment {
 /// @brief Deserialize attachment metadata.
 void from_json(const Json& in, Attachment& value);
 
+/// @brief Fresh 24-character request ID for message deduplication; not an account-safety mechanism.
+[[nodiscard]] std::string new_message_nonce();
 /// @brief Outgoing text/reply settings. Mention notifications are disabled by default.
 struct MessageOptions {
     std::string content; ///< Nonempty text to send.
     bool allow_mentions = false; ///< Enable user/role/everyone mention parsing explicitly.
     bool mention_author = false; ///< Whether a reply should notify its original author.
     std::optional<Snowflake> reply_to; ///< Optional message ID to reference as a reply.
+    std::string nonce = new_message_nonce(); ///< Reuse the same options/nonce when resolving an ambiguous send.
+    bool enforce_nonce = true; ///< Return an existing recent message rather than create a duplicate.
     /// @brief Serialize these options to the API payload; empty content is rejected.
     [[nodiscard]] Json json() const;
 };

@@ -7,6 +7,7 @@
 #include <curl/curl.h>
 #include <dave/dave.h>
 #include <openssl/evp.h>
+#include <type_traits>
 namespace discord::detail::media {
 class SocketWeb {
     CURL *curl_ = nullptr;
@@ -196,6 +197,9 @@ inline bool audio_output_enabled(const MediaOptions &options, bool screen) {
     return !options.muted && !options.audio_source.empty() &&
            (screen ? options.stream_audio : options.voice_audio);
 }
+inline bool video_output_enabled(const MediaOptions &options, bool screen) {
+    return (screen ? options.go_live : options.camera) && !options.video_source.empty();
+}
 class Voice {
     std::unique_ptr<SocketWeb> ws_;
     std::atomic_bool &stop_;
@@ -363,7 +367,7 @@ class Voice {
         }
     }
     bool sends_video() const {
-        return output_ && (screen_ || options_.camera) && !options_.video_source.empty();
+        return output_ && video_output_enabled(options_, screen_);
     }
     Json stream_description() const {
         return {
@@ -1007,9 +1011,13 @@ class Voice {
           source_(std::move(source)), output_(output), screen_(screen), frame_(std::move(frame)),
           emit_(std::move(emit)) {
         recognized_.insert(self_);
-        session_ = daveSessionCreate(nullptr, nullptr, nullptr, nullptr);
-        encryptor_ = daveEncryptorCreate();
-        if (!session_ || !encryptor_)
+        // Until construction succeeds, local RAII owners also cover invalid
+        // endpoints, connection failures and failed Identify sends.
+        std::unique_ptr<std::remove_pointer_t<DAVESessionHandle>, decltype(&daveSessionDestroy)>
+            session_guard(daveSessionCreate(nullptr, nullptr, nullptr, nullptr), daveSessionDestroy);
+        std::unique_ptr<std::remove_pointer_t<DAVEEncryptorHandle>, decltype(&daveEncryptorDestroy)>
+            encryptor_guard(daveEncryptorCreate(), daveEncryptorDestroy);
+        if (!session_guard || !encryptor_guard)
             throw Error("Cannot create native DAVE session");
         if (endpoint.starts_with("wss://"))
             endpoint.erase(0, 6);
@@ -1032,6 +1040,8 @@ class Voice {
                          {"video", true},
                          {"streams", streams},
                          {"max_dave_protocol_version", daveMaxSupportedProtocolVersion()}}}});
+        session_ = session_guard.release();
+        encryptor_ = encryptor_guard.release();
     }
     ~Voice() {
 #ifdef _WIN32
@@ -1116,7 +1126,7 @@ class Voice {
         ++audio_sent_;
     }
     void video(View clear) {
-        if (!can_send()) {
+        if (!can_send() || !sends_video()) {
             last_sent_ = {};
             video_intervals_.clear();
             return;

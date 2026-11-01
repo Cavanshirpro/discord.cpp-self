@@ -3,6 +3,8 @@
 // Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 #include "internal.hpp"
 #include <charconv>
+#include <algorithm>
+#include <random>
 
 namespace discord {
 namespace {
@@ -111,11 +113,24 @@ void from_json(const Json& in, Attachment& value) {
     value.url = in.value("url", "");
     value.size = in.value("size", std::uint64_t{});
 }
+std::string new_message_nonce() {
+    std::random_device random;
+    constexpr char hex[] = "0123456789abcdef";
+    std::string value;
+    value.reserve(24);
+    for (int i = 0; i < 3; ++i) {
+        const auto bits = static_cast<std::uint32_t>(random());
+        for (int shift = 28; shift >= 0; shift -= 4) value += hex[(bits >> shift) & 15];
+    }
+    return value;
+}
 Json MessageOptions::json() const {
     if (content.empty()) throw std::invalid_argument("A message needs text content");
+    if (nonce.empty() || nonce.size() > 25 || std::any_of(nonce.begin(), nonce.end(), [](unsigned char c) { return c < 33 || c > 126; }))
+        throw std::invalid_argument("Message nonce must be 1..25 printable ASCII characters");
     Json out{{"content", content}, {"allowed_mentions", {
         {"parse", allow_mentions ? Json::array({"users", "roles", "everyone"}) : Json::array()},
-        {"replied_user", mention_author}}}};
+        {"replied_user", mention_author}}}, {"nonce", nonce}, {"enforce_nonce", enforce_nonce}};
     if (reply_to) out["message_reference"] = {{"message_id", *reply_to}, {"fail_if_not_exists", false}};
     return out;
 }

@@ -29,6 +29,7 @@ class State:
         self.errors = []
         self.operations = []
         self.replies = []
+        self.send_nonces = []
 
 
 class Http(http.server.BaseHTTPRequestHandler):
@@ -71,6 +72,13 @@ class Http(http.server.BaseHTTPRequestHandler):
                 status, data = 204, None
             elif self.path == "/api/channels/200/messages" and self.command == "POST":
                 state.sends += 1
+                assert isinstance(body['nonce'], str) and 1 <= len(body['nonce']) <= 25
+                assert body['enforce_nonce'] is True
+                state.send_nonces.append(body['nonce'])
+                if state.mode == 'basic' and state.sends == 2:
+                    assert state.send_nonces[0] == body['nonce'], 'HTTP 429 retry changed message identity'
+                if state.mode == 'basic' and state.sends == 3:
+                    assert state.send_nonces[0] != body['nonce'], 'Independent messages reused a nonce'
                 assert body["allowed_mentions"]["parse"] == []
                 assert "embeds" not in body and "embed" not in body
                 if state.mode == "auto_reply":

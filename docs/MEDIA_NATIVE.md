@@ -130,6 +130,21 @@ perceive echo. `muted` is the initial outgoing mute state. Snapshots expose
 requested setting. Local speaker playback defaults to off; an application used
 alongside an already-playing Discord client should leave it off unless wanted.
 
+## Changing camera and Go Live without leaving voice
+
+Call `session.set_outputs(camera, go_live)` on a running session. The camera
+updates the existing voice transport's video announcement; Go Live creates or
+deletes only the outgoing stream transport. Incoming streams, voice, audio and
+the current recording retain their lifetimes. A nonempty video source is needed
+to enable either output. To replace a file, use `set_sources(video, audio)` first
+and wait for `sources_changed` before enabling its output.
+
+Snapshots expose `camera`, `go_live` and `stream_stop_pending`; `outputs_changed`
+acknowledges the requested flags, while the outgoing transport's `connected`
+field reports transport readiness. A rapid off/on waits for `STREAM_DELETE`
+before creating another stream. Outstanding transports from the old stream
+generation are discarded rather than attached after it was disabled.
+
 ## Physical capture
 
 Capture is explicit; no device opens merely by joining a channel. Set an FFmpeg

@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.2 (package 0.2.2) - 2026-11-01
+
+- Add in-place camera/Go Live controls that preserve voice, receiving and recording.
+- Reject stale outgoing stream transports after stop/start races and retain current source preferences.
+- Add default message nonce/enforce_nonce support for resolving duplicate sends.
+- Avoid retrying verification/account restrictions as ordinary HTTP 429 responses; preserve rate-limit error codes.
+- Stop REST requests after a rejected credential until a different token is supplied.
+- Reuse HTTP connections and in-memory cookies per credential, with request-option and account isolation.
+- Release temporary DAVE resources when voice construction fails and fix native test linking in shared builds.
+- Add offline stream-lifecycle, message/restriction, and HTTP-session regression checks.
+
+These reliability changes do not claim to prevent account enforcement or clear
+an account-security restriction. Consumers must rebuild with matching headers
+and libraries.
+
 ## v0.2.1 (package 0.2.1) - 2026-10-29
 
 - Apply deaf state to remote stream audio and local playback, clearing queued PCM/waveOut buffers.

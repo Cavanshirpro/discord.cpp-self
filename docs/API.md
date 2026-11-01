@@ -1,4 +1,4 @@
-# API reference — 0.2.1
+# API reference — 0.2.2
 
 Include `<discord/discord.hpp>`. Public names live in namespace `discord`.
 `Json` is an alias for `nlohmann::json`.
@@ -68,6 +68,28 @@ and does not guarantee that arbitrary Discord endpoints work with user tokens.
 Friend requests are real writes. Check existing relationships first: the server's
 relationship API can behave differently for existing/pending relationships. The
 manual test harness preserves friendships and pending/blocked states.
+
+## Message delivery and HTTP sessions
+
+The REST transport reuses its HTTP session and server-issued in-memory cookies
+for one credential. A different token discards that session; another Client has
+an independent cookie store. No cookies are imported from a browser or persisted
+to disk. This changes session continuity, not the account's security status.
+
+`MessageOptions` creates a fresh `nonce` and enables `enforce_nonce` by default.
+Reuse the same options/nonce for the same logical send after an ambiguous
+failure; create new options for an intentionally new message. Discord's
+deduplication window lasts only a few minutes. This prevents duplicate messages,
+not account restrictions. Nonces are 1–25 printable ASCII characters; the default
+is 24 hexadecimal characters. Uncertain transport/5xx outcomes are never retried
+automatically. A normal rate-limit retry retains the original body and nonce.
+
+An HTTP 401 stops further REST requests using that credential. Calling `login`
+with the same rejected token does not erase this state; a different token does.
+Verification/CAPTCHA and account-restriction responses are not automatically
+retried, even when their HTTP status is 429. Ordinary bucket/global limits retain
+bounded retry behavior. The original Discord error code is preserved when the
+rate-limit retry budget is exhausted.
 
 ## Models
 

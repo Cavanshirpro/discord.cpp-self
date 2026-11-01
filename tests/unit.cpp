@@ -58,6 +58,12 @@ void models() {
     CHECK(data["allowed_mentions"]["replied_user"] == false);
     CHECK(data["message_reference"]["message_id"] == "123");
     CHECK(!data.contains("embed") && !data.contains("embeds"));
+    CHECK(data["nonce"].get<std::string>().size() == 24 && data["enforce_nonce"] == true);
+    CHECK(options.json()["nonce"] == data["nonce"]); // Same operation retains its identity.
+    CHECK(discord::MessageOptions{}.nonce != options.nonce);
+    auto invalid_nonce = options;
+    invalid_nonce.nonce = std::string(26, 'x');
+    throws<std::invalid_argument>([&] { (void)invalid_nonce.json(); });
     options.allow_mentions = true;
     CHECK(options.json()["allowed_mentions"]["parse"].size() == 3);
     throws<std::invalid_argument>([] { (void)discord::MessageOptions{}.json(); });
@@ -112,6 +118,14 @@ void http() {
     rest.login("offline-token");
     CHECK(rest.request("POST", "/channels/1/messages", {{"content", "hi"}})["id"] == "4");
     CHECK(calls == 2);
+    discord::ClientOptions exhausted_code_options;
+    exhausted_code_options.max_rate_limit_retries = 0;
+    Rest exhausted_code(exhausted_code_options, [](const Request&) {
+        return Response{429, R"({"code":20028,"message":"channel write limit","retry_after":0})", {}};
+    });
+    exhausted_code.login("test");
+    try { (void)exhausted_code.request("POST", "/channels/1/messages", {{"content", "x"}}); CHECK(false); }
+    catch (const discord::HttpError& e) { CHECK(e.code == 20028); }
     for (const auto* path : {"https://example.org", "//example.org", "/test\r\n", "/../test", "/test#x"})
         throws<std::invalid_argument>([&] { (void)rest.request("GET", path); });
     throws<std::invalid_argument>([&] { (void)rest.request("GET\r\n", "/test"); });
@@ -142,6 +156,32 @@ void http() {
     failure.login("test"); calls = 0;
     throws<discord::HttpError>([&] { (void)failure.request("POST", "/test", {{"content", "hi"}}); });
     CHECK(calls == 1); // Ambiguous mutations must never be replayed automatically.
+    for (int restricted_code : {40002, 40003, 40004, 20026}) {
+        int restricted_calls = 0;
+        Rest restricted({}, [&](const Request&) {
+            ++restricted_calls;
+            return Response{429, Json{{"code", restricted_code}, {"message", "restricted"}, {"retry_after", 0}}.dump(), {}};
+        });
+        restricted.login("test");
+        try { (void)restricted.request("POST", "/channels/1/messages", {{"content", "x"}}); CHECK(false); }
+        catch (const discord::HttpError& e) { CHECK(e.code == restricted_code && e.status == 429); }
+        CHECK(restricted_calls == 1);
+    }
+    int invalid_calls = 0;
+    Rest invalid_token({}, [&](const Request&) { ++invalid_calls; return Response{401, "{}", {}}; });
+    invalid_token.login("old");
+    throws<discord::HttpError>([&] { (void)invalid_token.request("GET", "/users/@me"); });
+    invalid_token.login("old");
+    throws<discord::HttpError>([&] { (void)invalid_token.request("POST", "/channels/1/messages", {{"content", "x"}}); });
+    CHECK(invalid_calls == 1);
+    invalid_token.login("new");
+    throws<discord::HttpError>([&] { (void)invalid_token.request("GET", "/users/@me"); });
+    CHECK(invalid_calls == 2);
+    int challenge_calls = 0;
+    Rest challenge429({}, [&](const Request&) { ++challenge_calls; return Response{429, R"({"captcha_key":["required"],"retry_after":0})", {}}; });
+    challenge429.login("test");
+    throws<discord::VerificationRequired>([&] { (void)challenge429.request("POST", "/channels/1/messages", {{"content", "x"}}); });
+    CHECK(challenge_calls == 1);
     Rest challenge({}, [](const auto&) { return Response{400, R"({"captcha_key":["captcha-required"],"captcha_sitekey":"not-a-real-key"})", {}}; });
     challenge.login("test");
     throws<discord::VerificationRequired>([&] { (void)challenge.request("PUT", "/users/@me/relationships/42", Json::object()); });

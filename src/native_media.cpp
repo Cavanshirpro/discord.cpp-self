@@ -5,6 +5,7 @@
 #include "native_media.hpp"
 #include "internal.hpp"
 #include "native_recording.hpp"
+#include "native_stream_state.hpp"
 #include <future>
 namespace discord::detail {
 using namespace media;
@@ -72,7 +73,8 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
         outgoing.push_back({{"op", op}, {"d", std::move(data)}});
     };
     std::string self, session;
-    bool joined = false, stream_requested = false, deaf = false;
+    bool joined = false, deaf = false;
+    StreamState own_stream;
     auto pending_join = Clock::time_point::max();
     Json server_event = nullptr;
     std::map<std::string, Json> participants, streams, stream_servers, profiles;
@@ -122,7 +124,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
     auto stop_connections = [&] {
         for (auto &key : watching)
             send(19, {{"stream_key", key}});
-        if (stream_requested)
+        if (own_stream.requested)
             send(19, {{"stream_key", own_key()}});
         watching.clear();
         ignored_streams.clear();
@@ -134,7 +136,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
         server_event = nullptr;
         session.clear();
         joined = false;
-        stream_requested = false;
+        own_stream.reset();
     };
     std::shared_ptr<Sources> sources;
     auto preparation_options = options;
@@ -183,6 +185,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
         std::future<std::unique_ptr<Voice>> future;
         bool output;
         std::string owner;
+        std::uint64_t stream_epoch = 0;
     };
     std::map<std::pair<int, std::string>, ConnectJob> connect_jobs;
     auto create_connections = [&] {
@@ -196,7 +199,10 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                 auto connection = it->second.future.get();
                 if (it->first.first == generation &&
                     (key == "voice" ||
-                     (streams.contains(key) && (key == own_key() || watching.contains(key))))) {
+                     (streams.contains(key) &&
+                      (key == own_key() ? options.go_live && own_stream.accepts(it->second.stream_epoch)
+                                        : watching.contains(key))))) {
+                    connection->set_sources(options);
                     connections[key] = std::move(connection);
                     if (key == own_key())
                         send(22, {{"stream_key", key}, {"paused", false}});
@@ -208,7 +214,8 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
             } catch (const std::exception &error) {
                 if (callback_failure)
                     std::rethrow_exception(callback_failure);
-                if (it->first.first == generation) {
+                if (it->first.first == generation &&
+                    (key != own_key() || own_stream.accepts(it->second.stream_epoch))) {
                     auto attempt = ++failures[key];
                     retry_due[key] =
                         Clock::now() + std::chrono::seconds{std::min(30, 1 << std::min(attempt, 4))};
@@ -251,10 +258,9 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
             }
         }
         if (options.go_live && !options.video_source.empty() && connections.contains("voice") &&
-            connections.at("voice")->connected() && !stream_requested &&
-            Clock::now() >= retry_due["create_stream"]) {
+            connections.at("voice")->connected() &&
+            Clock::now() >= retry_due["create_stream"] && own_stream.begin()) {
             send(18, {{"type", "guild"}, {"guild_id", guild()}, {"channel_id", channel()}});
-            stream_requested = true;
         }
         for (auto &[key, secret] : stream_servers) {
             if (connections.contains(key) || connect_jobs.contains({generation, key}) ||
@@ -265,6 +271,8 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
             if (server.empty() || chan.empty() || secret.value("endpoint", Json(nullptr)).is_null())
                 continue;
             bool output = key == own_key();
+            if (output && (!options.go_live || !own_stream.requested || own_stream.stopping))
+                continue;
             if (!output && !watching.contains(key))
                 continue;
             auto pos = key.find_last_of(':');
@@ -286,7 +294,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                                               output ? "outgoing_stream" : "stream-" + owner, group, output,
                                               true, opts, stop, recognized, receive, emit);
                                       }),
-                           output, owner});
+                           output, owner, own_stream.epoch});
         }
     };
     try {
@@ -355,6 +363,8 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                           {"has_endpoint", d.value("endpoint", Json(nullptr)).is_string()}});
                 } else if (e.name == "STREAM_CREATE" || e.name == "STREAM_UPDATE") {
                     auto key = d.value("stream_key", std::string{});
+                    if (key == own_key() && (!options.go_live || !own_stream.requested))
+                        continue;
                     if (key.starts_with("guild:" + guild() + ":" + channel() + ":")) {
                         auto &s = streams[key];
                         if (!s.is_object())
@@ -363,12 +373,16 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                         emit({{"event", e.name == "STREAM_CREATE" ? "stream_created" : "stream_changed"},
                               {"stream_key", key}});
                     }
-                } else if (e.name == "STREAM_SERVER_UPDATE")
-                    stream_servers[d.at("stream_key").get<std::string>()] = d;
+                } else if (e.name == "STREAM_SERVER_UPDATE") {
+                    const auto key = d.at("stream_key").get<std::string>();
+                    if (key.starts_with("guild:" + guild() + ":" + channel() + ":") &&
+                        (key != own_key() || (options.go_live && own_stream.requested)))
+                        stream_servers[key] = d;
+                }
                 else if (e.name == "STREAM_DELETE") {
                     auto key = d.value("stream_key", std::string{});
                     if (key == own_key()) {
-                        stream_requested = false;
+                        own_stream.reset();
                         retry_due["create_stream"] = Clock::now() + std::chrono::seconds{2};
                     }
                     connections.erase(key);
@@ -391,6 +405,26 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                         const bool enabled = command.at("enabled").get<bool>();
                         recorder.set_playback(enabled);
                         options.play_received_audio = enabled;
+                    } else if (op == "set_outputs") {
+                        const bool camera = command.at("camera").get<bool>();
+                        const bool go_live = command.at("go_live").get<bool>();
+                        if ((camera || go_live) && options.video_source.empty())
+                            throw Error("Select a video source before enabling an output");
+                        const bool changed = options.camera != camera || options.go_live != go_live;
+                        options.camera = camera;
+                        options.go_live = go_live;
+                        if (changed) {
+                            if (!go_live && own_stream.stop()) {
+                                send(19, {{"stream_key", own_key()}});
+                                connections.erase(own_key());
+                                stream_servers.erase(own_key());
+                                streams.erase(own_key());
+                            }
+                            for (auto &[_, v] : connections) v->set_sources(options);
+                            voice_state();
+                            video_due = Clock::now();
+                        }
+                        emit({{"event", "outputs_changed"}, {"camera", camera}, {"go_live", go_live}});
                     } else if (op == "watch_stream") {
                         auto key = command.at("stream_key").get<std::string>();
                         ignored_streams.erase(key);
@@ -459,12 +493,11 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                     audio_due = video_due = Clock::now();
                     for (auto &[_, v] : connections)
                         v->set_sources(options);
-                    if (options.video_source.empty() && stream_requested) {
+                    if (options.video_source.empty() && own_stream.stop()) {
                         send(19, {{"stream_key", own_key()}});
                         connections.erase(own_key());
                         streams.erase(own_key());
                         stream_servers.erase(own_key());
-                        stream_requested = false;
                     }
                     voice_state();
                     emit({{"event", "sources_changed"},
@@ -558,7 +591,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                     auto packet = sources->take_video(video_index, options.loop);
                     if (!packet.empty()) {
                         for (auto &[key, v] : connections)
-                            if (key == own_key() || (key == "voice" && options.camera))
+                            if ((key == own_key() && options.go_live) || (key == "voice" && options.camera))
                                 v->video(packet);
                         video_due += std::chrono::nanoseconds{1000000000 / options.fps};
                     } else
@@ -586,6 +619,9 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                            {"self_user_id", self},
                            {"self_deaf", deaf},
                            {"self_mute", options.muted},
+                           {"camera", options.camera},
+                           {"go_live", options.go_live},
+                           {"stream_stop_pending", own_stream.stopping},
                            {"play_received_audio", options.play_received_audio},
                            {"audio_playback_active", recorder.playback_enabled()},
                            {"voice_audio", options.voice_audio},
@@ -656,7 +692,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
             if (now >= stream_ping) {
                 for (auto &key : watching)
                     send(21, {{"stream_key", key}});
-                if (stream_requested)
+                if (own_stream.requested)
                     send(21, {{"stream_key", own_key()}});
                 stream_ping = now + std::chrono::seconds{30};
             }

@@ -22,6 +22,7 @@ Start with the [quick example](../README.md), then choose a topic.
 | [Publishing setup](PUBLISHING.md) | GitHub settings, workflows, secrets and central registry submissions |
 | [Live findings](LIVE_TESTS.md) | Anonymized initial account test results |
 | [Review](REVIEW.md) | Corrections made during the user-API review |
+| [Reliability review](RELIABILITY_REVIEW_2026-10-29.md) | Message deduplication, account errors, output toggles, races and remaining limits |
 
-Release v0.2.1 uses package version 0.2.1. This documentation describes the shipped API;
-it does not imply complete endpoint coverage or universal account compatibility.
+Release v0.2.2 includes the reliability review and HTTP-session follow-up.
+Documentation does not imply complete endpoint coverage or universal account compatibility.

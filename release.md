@@ -1,46 +1,61 @@
-# discord.cpp-self v0.2.1
+# discord.cpp-self v0.2.2
 
-This update fixes media deaf/mute handling and prevents duplicate outgoing file
-audio by default. Package version: **0.2.1**.
+This update improves HTTP session continuity, message delivery/error handling,
+and camera/Go Live controls. Package version: **0.2.2**.
 
-## Fixes
+## Changes
 
-- Deaf state now suppresses Opus on every voice transport, including watched
-  Go Live streams, rather than relying solely on the main Gateway flag.
-- Local audio playback stops immediately when deafened or disabled; pending
-  waveOut buffers and queued PCM are cleared.
-- Add independent `set_audio_playback()` and `set_muted()` controls. Local
-  playback, incoming media and outgoing file/device audio have distinct states.
-- The file audio source goes to the voice channel once by default. Go Live
-  audio requires `stream_audio=true`; `voice_audio=false` selects stream-only
-  delivery. Sending identical audio to both destinations remains an explicit
-  choice, since viewers can otherwise hear two copies.
-- Snapshots expose mute, requested/active playback and audio destination flags.
-- Regression fixtures check muted output, deafened stream audio rejection and
-  default audio routing without real accounts or audio devices.
+- Add `MediaSession::set_outputs(camera, go_live)` to change outputs without
+  leaving the voice channel or interrupting incoming media and recording.
+- Wait for outgoing stream stop acknowledgement before recreating it, reject
+  stale asynchronous stream connections, and apply current source/output
+  preferences when a connection finishes preparing.
+- Add a fresh `MessageOptions::nonce` and default `enforce_nonce=true`.
+  Retain the same options/nonce for the same logical send after an ambiguous
+  failure; create new options for an intentionally new message. Deduplication
+  remains limited to Discord's recent-message window.
+- Classify verification/CAPTCHA and account-restriction errors before ordinary
+  HTTP 429 retry handling. Preserve Discord error codes on exhausted rate-limit
+  retries. Stop further REST requests with a rejected token until credentials
+  change.
+- Reuse HTTP connections and server-issued cookies in memory for one credential.
+  Reset request options after each transfer and discard the session when the
+  token changes. Client instances have separate cookie stores; no browser
+  cookies are imported and no cookie file is written.
+- Derive the library User-Agent version from CMake metadata.
+- Clean up temporary DAVE session/encryptor handles when voice construction
+  fails, and declare the native test's direct libcurl dependency for shared builds.
 
-The personal TUI remains external to the repository. Its local listening output
-defaults to off when used alongside the normal Discord client. The SDK never
-routes received conversation packets into the outgoing file/device source.
-These fixes address confirmed routing/control defects; absence of acoustic echo
-on a particular speaker/microphone setup requires a listening test.
+## Validation and limits
+
+Windows/MinGW static and shared native-media builds passed unit, HTTP/Gateway
+loopback, native media and HTTP/1.1 session tests. The new session fixture checks
+real connection reuse, cookie path scoping, request-method/body reset, and
+credential/Client isolation using localhost and fake credentials.
+
+No new live message or camera/Go Live toggle test is claimed for these changes.
+These fixes do not establish why an account was restricted or guarantee that
+Discord will accept account activity. Browser/TLS fingerprint impersonation is
+not included. See the [reliability review](https://github.com/Cavanshirpro/discord.cpp-self/blob/v0.2.2/docs/RELIABILITY_REVIEW_2026-10-29.md)
+for the remaining limits.
+
+Rebuild consumers against matching headers and libraries: `MessageOptions`
+gained members and the native media API gained output controls. Runtime remains
+C++ with optional native FFmpeg; no Node/Python/Rust runtime dependency is added.
+Personal interfaces, credentials, account journals and recordings are excluded.
 
 ## Downloads
 
-- [Source ZIP](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/discord.cpp-self-v0.2.1.zip)
-- [Source TAR.GZ](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/discord.cpp-self-v0.2.1.tar.gz)
-- [vcpkg overlay](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/discord.cpp-self-v0.2.1-vcpkg-overlay.zip)
-- [MSYS2 MINGW64 package](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/mingw-w64-x86_64-discord-cpp-self-0.2.1-1-any.pkg.tar.zst)
-- [MSYS2 UCRT64 package](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/mingw-w64-ucrt-x86_64-discord-cpp-self-0.2.1-1-any.pkg.tar.zst)
-- [MSYS2 recipe](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/discord.cpp-self-v0.2.1-msys2-recipe.zip)
-- [Release notes](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/release.md)
-- [SHA256SUMS](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.1/SHA256SUMS)
+- [Source ZIP](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.2/discord.cpp-self-v0.2.2.zip)
+- [Source TAR.GZ](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.2/discord.cpp-self-v0.2.2.tar.gz)
+- [vcpkg overlay](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.2/discord.cpp-self-v0.2.2-vcpkg-overlay.zip)
+- [MSYS2 MINGW64 package](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.2/mingw-w64-x86_64-discord-cpp-self-0.2.2-1-any.pkg.tar.zst)
+- [MSYS2 UCRT64 package](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.2/mingw-w64-ucrt-x86_64-discord-cpp-self-0.2.2-1-any.pkg.tar.zst)
+- [MSYS2 recipe](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.2/discord.cpp-self-v0.2.2-msys2-recipe.zip)
+- [Release notes](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.2/release.md)
+- [SHA256SUMS](https://github.com/Cavanshirpro/discord.cpp-self/releases/download/v0.2.2/SHA256SUMS)
 
-Prebuilt packages contain the REST/Gateway core; optional native media is built
-from source using [the media guide](https://github.com/Cavanshirpro/discord.cpp-self/blob/v0.2.1/docs/MEDIA_NATIVE.md).
-Rebuild media consumers against the new headers/library. No runtime Node/Python/
-Rust dependency is introduced. Personal configuration, tokens, scripts and media
-remain excluded from publication. See [v0.2.0](https://github.com/Cavanshirpro/discord.cpp-self/releases/tag/v0.2.0) for the native backend's
-original feature list and live validation limits.
+Prebuilt MSYS2 packages contain the REST/Gateway core. Build optional native media
+from source using the [media guide](https://github.com/Cavanshirpro/discord.cpp-self/blob/v0.2.2/docs/MEDIA_NATIVE.md).
 
 Copyright (C) 2026 Cavanshirpro. **LGPL-3.0-or-later**.

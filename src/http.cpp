@@ -106,9 +106,16 @@ void interruptible_wait(std::chrono::milliseconds delay, const std::atomic_bool&
             std::chrono::duration_cast<std::chrono::milliseconds>(end - Clock::now())));
     if (stop) throw Cancelled("Client closed");
 }
+struct Rest::HttpSession {
+    std::unique_ptr<CURL, CurlDeleter> handle{curl_easy_init()};
+    HttpSession() {
+        if (!handle) throw TransportError("Could not create HTTP session");
+    }
+};
 Rest::Rest(ClientOptions options, Transport transport) : options_(std::move(options)), transport_(std::move(transport)) {
     init_curl();
 }
+Rest::~Rest() = default;
 void Rest::login(std::string token) {
     if (token.empty() || std::any_of(token.begin(), token.end(), [](unsigned char c) { return c <= 32 || c == 127; }))
         throw std::invalid_argument("Provide a nonempty raw user token without whitespace");
@@ -117,14 +124,17 @@ void Rest::login(std::string token) {
     token_ = std::move(token);
     cancelled_ = false;
     if (!same_account) {
+        // Cookies and authenticated transport state belong to one credential.
+        session_.reset();
+        unauthorized_ = false;
         blocked_.clear();
         buckets_.clear();
         global_until_ = {};
     }
 }
 Response Rest::perform(const Request& request) {
-    std::unique_ptr<CURL, CurlDeleter> curl(curl_easy_init());
-    if (!curl) throw TransportError("Could not create HTTP connection");
+    if (!session_) session_ = std::make_unique<HttpSession>();
+    auto* curl = session_->handle.get();
     const auto url = options_.api_url + request.path;
     const auto body = request.body.is_null() ? std::string{} : request.body.dump();
     curl_slist* list = nullptr;
@@ -135,32 +145,43 @@ Response Rest::perform(const Request& request) {
     }
     std::unique_ptr<curl_slist, HeaderDeleter> headers(list);
     Capture capture;
-    curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl.get(), CURLOPT_PROTOCOLS_STR, "http,https");
-    curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headers.get());
-    curl_easy_setopt(curl.get(), CURLOPT_CUSTOMREQUEST, request.method.c_str());
-    curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, "discord.cpp-self/0.1.0");
-    curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
-    curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));
-    curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));
-    curl_easy_setopt(curl.get(), CURLOPT_ACCEPT_ENCODING, "");
-    curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, write_body);
-    curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &capture);
-    curl_easy_setopt(curl.get(), CURLOPT_HEADERFUNCTION, write_header);
-    curl_easy_setopt(curl.get(), CURLOPT_HEADERDATA, &capture);
-    curl_easy_setopt(curl.get(), CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(curl.get(), CURLOPT_XFERINFOFUNCTION, progress);
-    curl_easy_setopt(curl.get(), CURLOPT_XFERINFODATA, &cancelled_);
+    // Reset borrowed request pointers before their owners die, including on
+    // exceptions. libcurl retains connections, DNS/TLS caches and cookies.
+    struct ResetOptions {
+        CURL* handle;
+        ~ResetOptions() { curl_easy_reset(handle); }
+    } reset{curl};
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers.get());
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, request.method.c_str());
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "discord.cpp-self/" DISCORD_SELF_VERSION);
+    // Empty filename enables an in-memory cookie engine; no browser cookie
+    // import, cookie file, or automatic persistence is used.
+    if (curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "") != CURLE_OK)
+        throw TransportError("Could not enable HTTP session cookies");
+    curl_easy_setopt(curl, CURLOPT_MAXCONNECTS, 4L);
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));
+    curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_body);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &capture);
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, &capture);
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progress);
+    curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &cancelled_);
     if (!request.body.is_null()) {
-        curl_easy_setopt(curl.get(), CURLOPT_POSTFIELDS, body.c_str());
-        curl_easy_setopt(curl.get(), CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(body.size()));
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(body.size()));
     }
-    const auto result = curl_easy_perform(curl.get());
+    const auto result = curl_easy_perform(curl);
     if (cancelled_) throw Cancelled("Client closed");
     if (capture.too_large) throw ProtocolError("HTTP response exceeds 16 MiB");
     if (result != CURLE_OK) throw TransportError(std::string("HTTP transport: ") + curl_easy_strerror(result));
     long status = 0;
-    curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &status);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
     capture.response.status = static_cast<int>(status);
     return std::move(capture.response);
 }
@@ -172,6 +193,7 @@ Json Rest::request(std::string method, std::string path, Json body) {
         throw std::invalid_argument("Unsupported HTTP method");
     std::unique_lock lock(mutex_); // Serialized per client, including rate limit waits.
     if (token_.empty()) throw Error("Call login(token) or run(token) first");
+    if (unauthorized_) throw HttpError(401, 40001, "Token was rejected; authenticate with a valid token before making further requests");
     const Request request{std::move(method), std::move(path), std::move(body)};
     const auto key = route_key(request);
     const auto major = major_scope(request.path);
@@ -199,6 +221,14 @@ Json Rest::request(std::string method, std::string path, Json body) {
             limit_key = std::move(shared_key);
         }
         Json data = response.body.empty() ? Json(nullptr) : Json::parse(response.body, nullptr, false);
+        const int code = data.is_object() && data.contains("code") && data["code"].is_number_integer() ? data["code"].get<int>() : 0;
+        const auto message = data.is_object() && data.contains("message") && data["message"].is_string() ? data["message"].get<std::string>() : "Request failed";
+        if (response.status == 401) unauthorized_ = true;
+        if (response.status >= 400 && data.is_object() && data.contains("captcha_key"))
+            throw VerificationRequired(response.status);
+        // Account restrictions are not normal bucket exhaustion, even on HTTP 429.
+        if (response.status >= 400 && (code == 40002 || code == 40003 || code == 40004 || code == 20026))
+            throw HttpError(response.status, code, message);
         if (response.status == 429) {
             std::optional<double> retry;
             if (data.is_object() && data.contains("retry_after") && data["retry_after"].is_number())
@@ -206,7 +236,7 @@ Json Rest::request(std::string method, std::string path, Json body) {
             if (!retry) {
                 if (const auto it = response.headers.find("retry-after"); it != response.headers.end()) retry = seconds(it->second);
             }
-            if (!retry) throw HttpError(429, 0, "Rate limit response is missing retry_after");
+            if (!retry) throw HttpError(429, code, message + "; missing retry_after");
             const auto wait = rate_delay(*retry);
             const auto reset = Clock::now() + wait;
             const auto global_header = response.headers.find("x-ratelimit-global");
@@ -215,15 +245,12 @@ Json Rest::request(std::string method, std::string path, Json body) {
             if (global) global_until_ = std::max(global_until_, reset);
             else blocked_[limit_key] = std::max(blocked_[limit_key], reset);
             // Retain the server's deadline even when this invocation gives up.
-            if (attempt >= options_.max_rate_limit_retries) throw HttpError(429, 0, "Rate limit retry budget exhausted");
+            if (attempt >= options_.max_rate_limit_retries) throw HttpError(429, code, message + "; rate limit retry budget exhausted");
             if (*retry * 1000.0 > static_cast<double>(options_.max_rate_limit_wait.count()))
                 throw Error("Discord rate limit exceeds max_rate_limit_wait");
             continue;
         }
         if (response.status < 200 || response.status >= 300) {
-            if (data.is_object() && data.contains("captcha_key")) throw VerificationRequired(response.status);
-            const int code = data.is_object() && data.contains("code") && data["code"].is_number_integer() ? data["code"].get<int>() : 0;
-            const auto message = data.is_object() && data.contains("message") && data["message"].is_string() ? data["message"].get<std::string>() : "Request failed";
             throw HttpError(response.status, code, message);
         }
         if (data.is_discarded()) throw ProtocolError("Discord returned invalid JSON");

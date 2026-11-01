@@ -1,5 +1,17 @@
 # Local validation
 
+## HTTP session follow-up — 2026-11-01
+
+Windows/MinGW native-media static and shared builds each passed all four CTest
+suites: `unit` (102 checks), `native_media`, `loopback`, and `http_session`.
+The HTTP/1.1 fixture verifies real connection reuse, in-memory cookie retention
+and path scoping, POST-to-GET option reset, and credential/Client isolation.
+The native test target now links its direct libcurl dependency explicitly so it
+also links when the SDK is shared. These checks use localhost and fake tokens;
+they do not establish that a real account's security restriction has cleared.
+
+## Earlier package validation
+
 Validated on 2026-10-20 with Windows, MSYS2 MINGW64, GCC 16.2.0,
 CMake 4.4.3, libcurl 8.16.0, nlohmann/json 3.12.0 and zlib 1.3.1.
 

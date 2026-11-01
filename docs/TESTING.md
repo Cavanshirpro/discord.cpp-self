@@ -25,6 +25,12 @@ bot and own-message filters, normalized triggers, global/per-user cooldowns,
 replay suppression, pause/resume/status/quit controls and heartbeat progress.
 Only fake messages are sent to localhost; no real account is involved.
 
+The separate `http_session` fixture uses a real libcurl connection to an HTTP/1.1
+server on localhost. It checks connection reuse, in-memory cookie retention and
+path scoping, POST-to-GET body reset, same-token login, credential changes, and
+cookie isolation between Client instances. It does not contact Discord or use
+real credentials.
+
 Packaging checks build a standalone `tests/consumer` using the installed
 `find_package(discordSelf)` configuration. Both static and shared configurations
 run the offline suite in CI.

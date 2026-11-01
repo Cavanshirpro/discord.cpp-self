@@ -2,7 +2,7 @@
 # Copyright (C) 2026 Cavanshirpro
 # Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 cmake_minimum_required(VERSION 3.25)
-project(discord_cpp_self VERSION 0.2.1
+project(discord_cpp_self VERSION 0.2.2
     DESCRIPTION "A C++20 library for Discord user accounts"
     HOMEPAGE_URL "https://github.com/Cavanshirpro/discord.cpp-self" LANGUAGES CXX)
 
@@ -28,6 +28,7 @@ if(MINGW AND BUILD_SHARED_LIBS)
     target_link_options(discord_cpp_self PRIVATE -Wl,--export-all-symbols)
 endif()
 target_compile_features(discord_cpp_self PUBLIC cxx_std_20)
+target_compile_definitions(discord_cpp_self PRIVATE DISCORD_SELF_VERSION="${PROJECT_VERSION}")
 target_include_directories(discord_cpp_self PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
@@ -86,7 +87,7 @@ if(DISCORD_SELF_BUILD_TESTS)
         find_program(DISCORD_SELF_FFMPEG ffmpeg REQUIRED)
         add_executable(discord_self_native_media_tests tests/native_media.cpp)
         target_include_directories(discord_self_native_media_tests PRIVATE src ${DISCORD_SELF_DAVE_INCLUDE_DIR} ${DISCORD_SELF_OPUS_INCLUDE_DIR})
-        target_link_libraries(discord_self_native_media_tests PRIVATE discord::self ${DISCORD_SELF_DAVE_LIBRARY} MLSPP::mlspp OpenSSL::Crypto ${DISCORD_SELF_OPUS_LIBRARY})
+        target_link_libraries(discord_self_native_media_tests PRIVATE discord::self CURL::libcurl ${DISCORD_SELF_DAVE_LIBRARY} MLSPP::mlspp OpenSSL::Crypto ${DISCORD_SELF_OPUS_LIBRARY})
         if(WIN32)
             target_link_libraries(discord_self_native_media_tests PRIVATE winmm ws2_32)
         endif()
@@ -103,6 +104,9 @@ if(DISCORD_SELF_BUILD_TESTS)
         add_test(NAME loopback COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/loopback.py $<TARGET_FILE:discord_self_integration>)
         set_tests_properties(loopback PROPERTIES TIMEOUT 45)
+        add_test(NAME http_session COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/http_session.py $<TARGET_FILE:discord_self_integration>)
+        set_tests_properties(http_session PROPERTIES TIMEOUT 30)
     endif()
 endif()
 

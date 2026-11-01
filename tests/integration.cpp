@@ -20,6 +20,19 @@ int main(int argc, char** argv) {
         if (mode == "no_ready" || mode == "no_hello") options.request_timeout = std::chrono::milliseconds{250};
         if (mode == "overflow") options.event_queue_size = 2;
         discord::Client client(options);
+        if (mode == "http_session") {
+            client.login("fixture-account-a");
+            (void)client.request("POST", "/session/start", {{"fixture", true}});
+            client.login("fixture-account-a");
+            (void)client.request("GET", "/session/continue");
+            client.login("fixture-account-b");
+            (void)client.request("GET", "/session/new-account");
+            discord::Client independent(options);
+            independent.login("fixture-account-a");
+            (void)independent.request("GET", "/session/independent");
+            std::cout << "http_session passed\n";
+            return 0;
+        }
         if (mode == "auto_reply") {
             // Exercise the example's real policy through HTTP and Gateway fixtures.
             examples::AutoReplyHandler responder(client, 200);
