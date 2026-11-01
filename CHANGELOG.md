@@ -10,6 +10,7 @@
 - Reuse HTTP connections and in-memory cookies per credential, with request-option and account isolation.
 - Release temporary DAVE resources when voice construction fails and fix native test linking in shared builds.
 - Add offline stream-lifecycle, message/restriction, and HTTP-session regression checks.
+- Give synthetic Gateway heartbeat tests CI scheduling headroom while explicitly checking heartbeat progress during REST waits.
 
 These reliability changes do not claim to prevent account enforcement or clear
 an account-security restriction. Consumers must rebuild with matching headers

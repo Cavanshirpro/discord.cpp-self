@@ -30,6 +30,7 @@ class State:
         self.operations = []
         self.replies = []
         self.send_nonces = []
+        self.rate_limit_heartbeats = 0
 
 
 class Http(http.server.BaseHTTPRequestHandler):
@@ -77,6 +78,7 @@ class Http(http.server.BaseHTTPRequestHandler):
                 state.send_nonces.append(body['nonce'])
                 if state.mode == 'basic' and state.sends == 2:
                     assert state.send_nonces[0] == body['nonce'], 'HTTP 429 retry changed message identity'
+                    assert state.heartbeats - state.rate_limit_heartbeats >= 2, 'REST wait blocked Gateway heartbeats'
                 if state.mode == 'basic' and state.sends == 3:
                     assert state.send_nonces[0] != body['nonce'], 'Independent messages reused a nonce'
                 assert body["allowed_mentions"]["parse"] == []
@@ -86,7 +88,8 @@ class Http(http.server.BaseHTTPRequestHandler):
                     state.replies.append(body)
                     data = message(content=body["content"])
                 elif state.sends == 1:
-                    status, data = 429, {"retry_after": 0.18, "global": True}
+                    state.rate_limit_heartbeats = state.heartbeats
+                    status, data = 429, {"retry_after": 0.70, "global": True}
                 else:
                     data = message(content=body["content"])
                     if state.sends == 3:
@@ -184,7 +187,9 @@ class Gateway(socketserver.BaseRequestHandler):
                     send_frame(sock, payload)
 
             if state.mode != "no_hello":
-                packet(10, {"heartbeat_interval": 40}, fragmented=True)
+                # Leave headroom above the client's 50 ms socket poll and CI
+                # scheduling/TCP delays while retaining a fast missing-ACK test.
+                packet(10, {"heartbeat_interval": 200}, fragmented=True)
             identified = False
             start = None
             triggered = False
@@ -201,7 +206,7 @@ class Gateway(socketserver.BaseRequestHandler):
                     if state.mode != "missing_ack":
                         packet(11, None)
                 elif value["op"] in (2, 6):
-                    assert value["d"]["token"] == "offline-token"
+                    assert value["d"]["token"] == "offline-token", "Unexpected fixture credential"
                     identified, start = True, time.monotonic()
                     if state.mode == "fatal":
                         send_frame(sock, struct.pack("!H", 4004), opcode=8)
@@ -209,7 +214,7 @@ class Gateway(socketserver.BaseRequestHandler):
                     if state.mode == "no_ready":
                         continue
                     if connection == 2 and state.mode == "basic":
-                        assert value["op"] == 6 and value["d"]["session_id"] == "session"
+                        assert value["op"] == 6 and value["d"]["session_id"] == "session", "Expected session resume on second connection"
                         packet(0, {}, "RESUMED")
                     else:
                         assert value["op"] == 2, "Invalid session must identify"
@@ -257,7 +262,8 @@ class Gateway(socketserver.BaseRequestHandler):
                         auto_phase = 3
                     if elapsed > 8:
                         raise AssertionError("Auto-reply did not honor its owner quit command")
-                if identified and not triggered and time.monotonic() - start > 0.30:
+                trigger_delay = 1.0 if state.mode == "basic" else 0.30
+                if identified and not triggered and time.monotonic() - start > trigger_delay:
                     triggered = True
                     if state.mode == "basic" and connection == 1:
                         assert state.heartbeats >= 3, "REST blocked heartbeats"

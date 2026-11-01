@@ -32,6 +32,8 @@ Windows/MinGW static and shared native-media builds passed unit, HTTP/Gateway
 loopback, native media and HTTP/1.1 session tests. The new session fixture checks
 real connection reuse, cookie path scoping, request-method/body reset, and
 credential/Client isolation using localhost and fake credentials.
+The Gateway fixture also checks heartbeat progress during REST rate-limit waits
+with timing headroom for CI scheduling.
 
 No new live message or camera/Go Live toggle test is claimed for these changes.
 These fixes do not establish why an account was restricted or guarantee that
