@@ -18,7 +18,12 @@ struct ClientOptions {
     std::size_t event_queue_size = 4'096; ///< Pending dispatch capacity; overflow raises an error.
     int max_reconnect_attempts = 8; ///< Consecutive reconnect retry budget; zero disables retries.
     int max_rate_limit_retries = 5; ///< Maximum HTTP 429 retries for one request.
+    std::string browser_profile; ///< Optional curl-impersonate target (e.g. chrome152). Empty uses native curl; unsupported builds reject it.
+    std::string ca_bundle; ///< Optional PEM trust bundle for REST and Gateway TLS; verification remains enabled.
 };
+
+/// @brief Whether this build links the curl-impersonate API. No network request is made.
+[[nodiscard]] bool supports_browser_impersonation() noexcept;
 
 /// @brief Initial authenticated Gateway state; guild entries may be partial.
 struct Ready {

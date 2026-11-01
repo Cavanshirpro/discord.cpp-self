@@ -139,11 +139,13 @@ void Gateway::run() {
 void Gateway::connect() {
     std::unique_ptr<CURL, CurlDeleter> curl(curl_easy_init());
     if (!curl) throw TransportError("Could not create Gateway connection");
+    apply_browser_identity(curl.get(), options_);
     const auto url = gateway_address(resume_url_.empty() ? options_.gateway_url : resume_url_);
     curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl.get(), CURLOPT_PROTOCOLS_STR, "ws,wss");
     curl_easy_setopt(curl.get(), CURLOPT_CONNECT_ONLY, 2L);
-    curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, "discord.cpp-self/0.1.0");
+    // libcurl WebSockets use HTTP/1.1 Upgrade; REST retains the profile's HTTP/2 settings.
+    curl_easy_setopt(curl.get(), CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
     curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));
     curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));

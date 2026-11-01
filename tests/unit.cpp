@@ -231,6 +231,17 @@ void http() {
     throws<discord::Error>([&] { (void)exhausted.request("GET", "/still-blocked"); });
     CHECK(exhausted_calls == 1);
     discord::ClientOptions invalid;
+    invalid.browser_profile = "chrome152\r\nInjected: true";
+    throws<std::invalid_argument>([&] { discord::Client value(invalid); });
+    invalid.browser_profile = "unknown_profile";
+    throws<std::invalid_argument>([&] { discord::Client value(invalid); });
+    invalid.browser_profile = "chrome152";
+    if (discord::supports_browser_impersonation()) { discord::Client value(invalid); }
+    else throws<std::invalid_argument>([&] { discord::Client value(invalid); });
+    invalid.browser_profile.clear();
+    invalid.ca_bundle = std::string("bundle\0.pem", 11);
+    throws<std::invalid_argument>([&] { discord::Client value(invalid); });
+    invalid.ca_bundle.clear();
     invalid.event_queue_size = 0;
     throws<std::invalid_argument>([&] { discord::Client value(invalid); });
 }

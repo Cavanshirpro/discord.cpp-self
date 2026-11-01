@@ -151,11 +151,13 @@ Response Rest::perform(const Request& request) {
         CURL* handle;
         ~ResetOptions() { curl_easy_reset(handle); }
     } reset{curl};
+    // curl_easy_reset clears profile settings after every request; reapply them
+    // before request-specific headers/options while retaining the session caches.
+    apply_browser_identity(curl, options_);
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https");
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers.get());
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, request.method.c_str());
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "discord.cpp-self/" DISCORD_SELF_VERSION);
     // Empty filename enables an in-memory cookie engine; no browser cookie
     // import, cookie file, or automatic persistence is used.
     if (curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "") != CURLE_OK)
@@ -164,7 +166,7 @@ Response Rest::perform(const Request& request) {
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));
-    curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
+    if (options_.browser_profile.empty()) curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_body);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &capture);
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);

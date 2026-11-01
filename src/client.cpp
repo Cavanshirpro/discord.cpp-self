@@ -52,6 +52,7 @@ struct Client::Impl {
     std::function<void(const std::exception&)> error_handler;
 
     explicit Impl(ClientOptions value) : options(std::move(value)), cache(options.message_cache_size) {
+        detail::validate_browser_identity(options);
         if (options.event_queue_size == 0 || options.request_timeout.count() <= 0 ||
             options.request_timeout.count() > std::numeric_limits<long>::max() || options.max_rate_limit_wait.count() < 0 ||
             options.max_reconnect_attempts < 0 || options.max_rate_limit_retries < 0)

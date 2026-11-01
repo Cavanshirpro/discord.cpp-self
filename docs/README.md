@@ -5,6 +5,7 @@ Start with the [quick example](../README.md), then choose a topic.
 | Topic | Contents |
 | --- | --- |
 | [Building](BUILDING.md) | Dependencies, MSYS2, static/shared builds and installed packages |
+| [Browser identity](BROWSER_IDENTITY.md) | Optional curl-impersonate profiles, TLS trust and build requirements |
 | [API](API.md) | Classes, operations, events, options and errors |
 | [Architecture](ARCHITECTURE.md) | Threads, ownership, caches and rate limits |
 | [Testing](TESTING.md) | Offline fixtures and manual account checks |

@@ -22,6 +22,8 @@ struct Response {
 };
 using Transport = std::function<Response(const Request&)>;
 void init_curl();
+void validate_browser_identity(const ClientOptions& options);
+void apply_browser_identity(void* handle, const ClientOptions& options);
 [[nodiscard]] std::string encode_path(std::string_view value);
 [[nodiscard]] std::string route_key(const Request& request);
 void interruptible_wait(std::chrono::milliseconds delay, const std::atomic_bool& stop);

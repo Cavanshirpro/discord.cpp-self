@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add optional browser TLS/HTTP profiles for REST and Gateway using curl-impersonate.
+- Expose build capability detection and a custom CA bundle path; reject unavailable profiles before connecting.
+- Reapply profiles after HTTP session resets while preserving certificate and hostname verification.
+
 ## v0.2.2 (package 0.2.2) - 2026-11-01
 
 - Add in-place camera/Go Live controls that preserve voice, receiving and recording.
