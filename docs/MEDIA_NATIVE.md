@@ -6,6 +6,11 @@ Enable `DISCORD_SELF_NATIVE_MEDIA` to link Discord's official C++ libdave,
 OpenSSL 3 and libopus. A native FFmpeg executable encodes inputs and muxes recordings.
 Python is used only by optional development tests and release tooling.
 
+Set `MediaOptions::transport` to the application's `ClientOptions` to share its
+browser profile and CA bundle. These settings apply to the independent media
+Gateway and voice/Go Live/watched-stream WebSockets, with certificate and hostname
+verification enabled. See [browser identity](BROWSER_IDENTITY.md).
+
 ## Build
 
 On MSYS2 MINGW64 install the normal project dependencies plus

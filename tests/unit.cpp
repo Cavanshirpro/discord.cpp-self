@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Cavanshirpro
 // Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 #include "internal.hpp"
+#include <discord/media.hpp>
 #include <iostream>
 #include <limits>
 
@@ -244,6 +245,16 @@ void http() {
     invalid.ca_bundle.clear();
     invalid.event_queue_size = 0;
     throws<std::invalid_argument>([&] { discord::Client value(invalid); });
+    discord::MediaOptions media;
+    media.guild_id = discord::Snowflake("1");
+    media.channel_id = discord::Snowflake("2");
+    media.camera = media.go_live = false;
+    { discord::MediaSession value(media); value.stop(); }
+    media.transport.browser_profile = "unknown_profile";
+    throws<std::invalid_argument>([&] { discord::MediaSession value(media); });
+    media.transport.browser_profile.clear();
+    media.transport.ca_bundle = std::string("bundle\0.pem", 11);
+    throws<std::invalid_argument>([&] { discord::MediaSession value(media); });
 }
 }
 int main() {

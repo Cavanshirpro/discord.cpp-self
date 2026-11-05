@@ -3,6 +3,7 @@
 // Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 #pragma once
 #include "native_media_common.hpp"
+#include "internal.hpp"
 #include "native_rtp_order.hpp"
 #include <curl/curl.h>
 #include <dave/dave.h>
@@ -16,11 +17,16 @@ class SocketWeb {
     std::atomic_bool &stop_;
 
   public:
-    SocketWeb(const std::string &url, std::atomic_bool &stop, long timeout) : stop_(stop) {
-        curl_ = curl_easy_init();
+    SocketWeb(const std::string &url, std::atomic_bool &stop, long timeout,
+              const ClientOptions &transport = {}) : stop_(stop) {
+        auto pending = std::unique_ptr<CURL, decltype(&curl_easy_cleanup)>(curl_easy_init(), curl_easy_cleanup);
+        curl_ = pending.get();
         if (!curl_)
             throw Error("Cannot create voice websocket");
+        apply_browser_identity(curl_, transport);
         curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl_, CURLOPT_PROTOCOLS_STR, "ws,wss");
+        curl_easy_setopt(curl_, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
         curl_easy_setopt(curl_, CURLOPT_CONNECT_ONLY, 2L);
         curl_easy_setopt(curl_, CURLOPT_NOSIGNAL, 1L);
         curl_easy_setopt(curl_, CURLOPT_TIMEOUT_MS, timeout);
@@ -34,10 +40,10 @@ class SocketWeb {
         curl_easy_setopt(curl_, CURLOPT_XFERINFODATA, &stop_);
         auto code = curl_easy_perform(curl_);
         if (code != CURLE_OK) {
-            curl_easy_cleanup(curl_);
             curl_ = nullptr;
             throw TransportError("Voice websocket connection failed");
         }
+        pending.release();
     }
     ~SocketWeb() {
         if (curl_)
@@ -1026,7 +1032,7 @@ class Voice {
         if (endpoint.empty() || endpoint.find_first_of("/\\?#@\r\n") != std::string::npos)
             throw Error("Invalid voice endpoint");
         ws_ = std::make_unique<SocketWeb>("wss://" + endpoint + "/?v=9", stop_,
-                                          long(options.connect_timeout.count()));
+                                          long(options.connect_timeout.count()), options.transport);
         Json streams = Json::array();
         if (output_)
             streams.push_back(stream_description());

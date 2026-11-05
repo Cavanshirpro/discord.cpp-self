@@ -41,7 +41,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
     std::atomic_bool gateway_stop = false;
     std::atomic_int64_t latency = -1;
     Gateway gateway(
-        ClientOptions{}, std::move(token), gateway_stop, latency,
+        options.transport, std::move(token), gateway_stop, latency,
         [&](RawEvent event) {
             std::lock_guard lock(mutex);
             if (incoming.size() >= 4096)

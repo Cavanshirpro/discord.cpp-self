@@ -3,6 +3,7 @@
 // Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 #pragma once
 #include "models.hpp"
+#include "client.hpp"
 #include <atomic>
 #include <filesystem>
 #include <functional>
@@ -43,6 +44,7 @@ struct MediaOptions {
     int record_video_seconds = 10;
     bool record_wait_for_media = false; ///< Start a configured recording after selected remote media arrives.
     std::filesystem::path cache_directory; ///< Native backend pre-encodes file video once and reuses it.
+    ClientOptions transport; ///< Independent media Gateway options; TLS profile/CA also apply to every voice/stream WebSocket.
 };
 
 /// @brief An independent media Gateway session with camera, microphone and Go Live.

@@ -27,7 +27,13 @@ Profile settings are applied to each REST request (including after an easy-handl
 reset) and every Gateway connection/reconnect. Request-specific JSON/auth headers
 override profile defaults. The Gateway uses HTTP/1.1 WebSocket Upgrade while REST
 retains the profile's HTTP/2 settings. Other optional media transports are outside
-this profile API's scope.
+this profile API's scope unless the media session is configured explicitly.
+
+For native media, set `MediaOptions::transport` to the same `ClientOptions` used
+by the application. Its independent media Gateway uses those options, and voice,
+camera/Go Live and watched-stream WebSockets inherit the profile and CA bundle.
+All WebSockets retain HTTP/1.1 Upgrade with certificate/hostname verification.
+The default media transport preserves the ordinary provider defaults.
 
 `ca_bundle` configures the trusted PEM bundle for both REST and Gateway. Peer and
 hostname verification are explicitly enabled after applying a profile. No browser

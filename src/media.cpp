@@ -3,6 +3,7 @@
 // Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 #include <discord/media.hpp>
 #include <discord/errors.hpp>
+#include "internal.hpp"
 #ifdef DISCORD_SELF_NATIVE_MEDIA
 #include "native_media.hpp"
 #endif
@@ -16,6 +17,7 @@ std::string utf8(const std::filesystem::path &p) {
 static_assert(std::atomic_bool::is_always_lock_free, "Media stop flag must be signal-safe");
 MediaSession::MediaSession(MediaOptions options) : options_(std::move(options)) {
     const auto &o = options_;
+    detail::validate_browser_identity(o.transport);
     if (!o.guild_id || !o.channel_id || o.ffmpeg.empty())
         throw std::invalid_argument("Media requires guild/channel IDs and an FFmpeg executable");
     if (o.width < 16 || o.width > 3840 || o.width % 2 || o.height < 16 || o.height > 2160 || o.height % 2 ||

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Propagate MediaOptions transport profiles/trust bundles to the independent media Gateway and all voice/stream WebSockets.
+
 - Add optional browser TLS/HTTP profiles for REST and Gateway using curl-impersonate.
 - Expose build capability detection and a custom CA bundle path; reject unavailable profiles before connecting.
 - Reapply profiles after HTTP session resets while preserving certificate and hostname verification.
