@@ -3,6 +3,7 @@
 # Licensed under LGPL-3.0-or-later; see NOTICE, LICENSE and COPYING.
 """Real libcurl session reuse, method isolation and credential boundaries on localhost."""
 import http.server
+import gzip
 import json
 import subprocess
 import sys
@@ -48,7 +49,9 @@ class Http(http.server.BaseHTTPRequestHandler):
             server.failures.append(str(error))
             self.send_response(500)
             payload = b'{"message":"fixture failure"}'
+        payload = gzip.compress(payload)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Encoding", "gzip")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)

@@ -166,7 +166,11 @@ Response Rest::perform(const Request& request) {
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, static_cast<long>(options_.request_timeout.count()));
-    if (options_.browser_profile.empty()) curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
+    // Browser headers advertise compression, but a header alone does not enable
+    // libcurl's response decoder. Re-enable it after every easy-handle reset;
+    // the profile's explicit Accept-Encoding header retains its wire ordering.
+    if (curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "") != CURLE_OK)
+        throw TransportError("Could not enable HTTP response decompression");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_body);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &capture);
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Decode compressed REST responses with browser profiles, including after session resets.
+
 - Propagate MediaOptions transport profiles/trust bundles to the independent media Gateway and all voice/stream WebSockets.
 
 - Add optional browser TLS/HTTP profiles for REST and Gateway using curl-impersonate.
