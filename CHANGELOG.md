@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Change file and live capture inputs independently during a voice session,
+  with optional camera and Go Live changes in the same command.
+- Verify replacement capture readiness and keep the voice session connected
+  when a selected capture stops.
+
 - Decode compressed REST responses with browser profiles, including after session resets.
 
 - Propagate MediaOptions transport profiles/trust bundles to the independent media Gateway and all voice/stream WebSockets.

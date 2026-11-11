@@ -9,6 +9,7 @@
 #include <functional>
 #include <mutex>
 #include <deque>
+#include <optional>
 
 namespace discord {
 /// @brief Options for the optional C++ RTP/DAVE media backend. All strings are UTF-8.
@@ -45,6 +46,11 @@ struct MediaOptions {
     bool record_wait_for_media = false; ///< Start a configured recording after selected remote media arrives.
     std::filesystem::path cache_directory; ///< Native backend pre-encodes file video once and reuses it.
     ClientOptions transport; ///< Independent media Gateway options; TLS profile/CA also apply to every voice/stream WebSocket.
+};
+
+struct MediaInput {
+    std::string source; ///< File path or FFmpeg device identifier. Empty disables the input.
+    std::string format; ///< Empty for files, otherwise the FFmpeg input format.
 };
 
 /// @brief An independent media Gateway session with camera, microphone and Go Live.
@@ -90,6 +96,10 @@ public:
     /// @brief Replace the outgoing files. Empty paths disable that media source.
     /// Existing playback continues while the replacement is prepared.
     void set_sources(std::string video, std::string audio);
+    /// @brief Change only the supplied inputs. Video output flags can change in the same operation.
+    /// A replacement must be ready before it takes over. Voice and receiving stay connected.
+    void set_inputs(std::optional<MediaInput> video, std::optional<MediaInput> audio,
+                    std::optional<bool> camera = {}, std::optional<bool> go_live = {});
     /// @brief Leave the current channel and join the requested guild voice channel.
     void join(Snowflake guild_id, Snowflake channel_id);
     /// @brief Native backend: start a finite recording of received audio/cameras/streams.

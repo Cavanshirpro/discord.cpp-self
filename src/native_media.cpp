@@ -144,7 +144,10 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
         return Sources::prepare(preparation_options, stop, [](const Json &) {});
     });
     std::future<std::shared_ptr<Sources>> replacement;
+    auto replacement_stop = std::make_shared<std::atomic_bool>(false);
     MediaOptions requested_options = options;
+    bool replace_video = false, replace_audio = false;
+    std::optional<bool> requested_camera, requested_stream;
     size_t audio_index = 0, video_index = 0;
     auto audio_due = Clock::now(), video_due = Clock::now();
     auto start = Clock::now(), snapshot_due = start, stream_ping = start;
@@ -297,6 +300,64 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                            output, owner, own_stream.epoch});
         }
     };
+    auto update_outputs = [&] {
+        if (!options.go_live && own_stream.stop()) {
+            send(19, {{"stream_key", own_key()}});
+            connections.erase(own_key());
+            stream_servers.erase(own_key());
+            streams.erase(own_key());
+        }
+        for (auto &[_, v] : connections) v->set_sources(options);
+        voice_state();
+        video_due = Clock::now();
+    };
+    auto emit_sources = [&] {
+        emit({{"event", "sources_changed"},
+              {"video_source", options.video_source}, {"video_format", options.video_format},
+              {"audio_source", options.audio_source}, {"audio_format", options.audio_format},
+              {"camera", options.camera}, {"go_live", options.go_live}});
+    };
+    auto apply_sources = [&](Sources &&prepared) {
+        sources->replace(std::move(prepared), replace_video, replace_audio);
+        if (replace_video) {
+            options.video_source = requested_options.video_source;
+            options.video_format = requested_options.video_format;
+            video_index = 0;
+        }
+        if (replace_audio) {
+            options.audio_source = requested_options.audio_source;
+            options.audio_format = requested_options.audio_format;
+            audio_index = 0;
+            audio_due = Clock::now();
+        }
+        if (requested_camera) options.camera = *requested_camera;
+        if (requested_stream) options.go_live = *requested_stream;
+        if (options.video_source.empty()) options.camera = options.go_live = false;
+        update_outputs();
+        emit_sources();
+    };
+    auto take_capture = [&](bool video) -> Bytes {
+        try {
+            return video ? sources->take_video(video_index, options.loop)
+                         : sources->take_audio(audio_index, options.loop);
+        } catch (const std::exception &e) {
+            if (video && sources->live_video) {
+                sources->replace(Sources{}, true, false);
+                options.video_source.clear();
+                options.video_format.clear();
+                options.camera = options.go_live = false;
+            } else if (!video && sources->live_audio) {
+                sources->replace(Sources{}, false, true);
+                options.audio_source.clear();
+                options.audio_format.clear();
+            } else
+                throw;
+            update_outputs();
+            emit_sources();
+            emit({{"event", "capture_error"}, {"media", video ? "video" : "audio"}, {"message", e.what()}});
+            return {};
+        }
+    };
     try {
         emit({{"event", "starting"},
               {"backend", "cpp"},
@@ -413,17 +474,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                         const bool changed = options.camera != camera || options.go_live != go_live;
                         options.camera = camera;
                         options.go_live = go_live;
-                        if (changed) {
-                            if (!go_live && own_stream.stop()) {
-                                send(19, {{"stream_key", own_key()}});
-                                connections.erase(own_key());
-                                stream_servers.erase(own_key());
-                                streams.erase(own_key());
-                            }
-                            for (auto &[_, v] : connections) v->set_sources(options);
-                            voice_state();
-                            video_due = Clock::now();
-                        }
+                        if (changed) update_outputs();
                         emit({{"event", "outputs_changed"}, {"camera", camera}, {"go_live", go_live}});
                     } else if (op == "watch_stream") {
                         auto key = command.at("stream_key").get<std::string>();
@@ -445,20 +496,42 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                     } else if (op == "stop_recording")
                         recorder.finish(true);
                     else if (op == "set_sources") {
-                        if (replacement.valid())
+                        if (!sources)
+                            throw Error("Initial media source is still being prepared");
+                        const bool disabling =
+                            (command.contains("video_source") || command.contains("audio_source")) &&
+                            command.value("video_source", "").empty() &&
+                            command.value("audio_source", "").empty();
+                        if (replacement.valid() && !disabling)
                             throw Error("A source replacement is still being prepared");
+                        if (replacement.valid()) *replacement_stop = true;
                         requested_options = options;
-                        requested_options.video_format.clear();
-                        requested_options.audio_format.clear();
-                        requested_options.video_source = command.at("video_source").get<std::string>();
-                        requested_options.audio_source = command.at("audio_source").get<std::string>();
+                        requested_options.video_source = command.value("video_source", options.video_source);
+                        requested_options.video_format = command.value("video_format", options.video_format);
+                        requested_options.audio_source = command.value("audio_source", options.audio_source);
+                        requested_options.audio_format = command.value("audio_format", options.audio_format);
+                        replace_video = requested_options.video_source != options.video_source ||
+                                        requested_options.video_format != options.video_format;
+                        replace_audio = requested_options.audio_source != options.audio_source ||
+                                        requested_options.audio_format != options.audio_format;
+                        requested_camera.reset();
+                        requested_stream.reset();
+                        if (command.contains("camera")) requested_camera = command.at("camera").get<bool>();
+                        if (command.contains("go_live")) requested_stream = command.at("go_live").get<bool>();
                         auto prepare_options = requested_options;
-                        replacement = std::async(std::launch::async, [prepare_options, &stop] {
-                            return Sources::prepare(prepare_options, stop, [](const Json &) {});
-                        });
-                        emit({{"event", "preparing_source"},
-                              {"video_source", requested_options.video_source},
-                              {"audio_source", requested_options.audio_source}});
+                        if (!replace_video) prepare_options.video_source.clear();
+                        if (!replace_audio) prepare_options.audio_source.clear();
+                        if (prepare_options.video_source.empty() && prepare_options.audio_source.empty()) {
+                            apply_sources(Sources{});
+                        } else {
+                            *replacement_stop = false;
+                            replacement = std::async(std::launch::async, [prepare_options, replacement_stop] {
+                                return Sources::prepare(prepare_options, *replacement_stop, [](const Json &) {});
+                            });
+                            emit({{"event", "preparing_source"},
+                                  {"video_source", requested_options.video_source},
+                                  {"audio_source", requested_options.audio_source}});
+                        }
                     } else if (op == "join") {
                         recorder.finish(true);
                         voice_state(true);
@@ -486,25 +559,11 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
             if (replacement.valid() &&
                 replacement.wait_for(std::chrono::seconds{0}) == std::future_status::ready)
                 try {
-                    sources = replacement.get();
-                    options.video_source = requested_options.video_source;
-                    options.audio_source = requested_options.audio_source;
-                    audio_index = video_index = 0;
-                    audio_due = video_due = Clock::now();
-                    for (auto &[_, v] : connections)
-                        v->set_sources(options);
-                    if (options.video_source.empty() && own_stream.stop()) {
-                        send(19, {{"stream_key", own_key()}});
-                        connections.erase(own_key());
-                        streams.erase(own_key());
-                        stream_servers.erase(own_key());
-                    }
-                    voice_state();
-                    emit({{"event", "sources_changed"},
-                          {"video_source", options.video_source},
-                          {"audio_source", options.audio_source}});
+                    auto prepared = replacement.get();
+                    if (!*replacement_stop) apply_sources(std::move(*prepared));
                 } catch (const std::exception &e) {
-                    emit({{"event", "command_error"}, {"op", "set_sources"}, {"message", e.what()}});
+                    if (!*replacement_stop)
+                        emit({{"event", "command_error"}, {"op", "set_sources"}, {"message", e.what()}});
                 }
             if (Clock::now() >= pending_join) {
                 pending_join = Clock::time_point::max();
@@ -561,7 +620,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
             }
             if (sources && ready) {
                 if (now >= audio_due && sources->has_audio()) {
-                    auto packet = sources->take_audio(audio_index, options.loop);
+                    auto packet = take_capture(false);
                     if (!packet.empty()) {
                         for (auto &[key, v] : connections)
                             if (key == "voice" || key == own_key())
@@ -588,7 +647,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                             }
                             v->force_keyframe = false;
                         }
-                    auto packet = sources->take_video(video_index, options.loop);
+                    auto packet = take_capture(true);
                     if (!packet.empty()) {
                         for (auto &[key, v] : connections)
                             if ((key == own_key() && options.go_live) || (key == "voice" && options.camera))
@@ -632,7 +691,9 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
                            {"transports", Json::object()},
                            {"receive", {{"audio_frames", received_audio}, {"video_frames", received_video}}},
                            {"video_source", options.video_source},
-                           {"audio_source", options.audio_source}};
+                           {"audio_source", options.audio_source},
+                           {"video_format", options.video_format},
+                           {"audio_format", options.audio_format}};
                 for (auto &[id, p] : participants) {
                     Json member = members.contains({guild(), id}) ? members.at({guild(), id})
                                                                   : p.value("member", Json::object());
@@ -710,6 +771,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
             poll_timer.wait(std::chrono::duration_cast<std::chrono::nanoseconds>(wake - Clock::now()));
         }
         stop = true;
+        *replacement_stop = true;
         recorder.flush();
         stop_connections();
         if (!self.empty())
@@ -718,6 +780,7 @@ void run_native_media(MediaOptions options, std::string token, std::atomic_bool 
         emit({{"event", "stopped"}});
     } catch (...) {
         stop = true;
+        *replacement_stop = true;
         connections.clear();
         try {
             recorder.flush();

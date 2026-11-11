@@ -164,6 +164,20 @@ options.video_source = "video=Camera device name";
 
 FFmpeg device names depend on the machine. The example launcher accepts file
 inputs; device inputs require an explicit configuration or C++ options.
+
+On a running session, `set_inputs` changes only the inputs you supply.
+An empty `MediaInput{}` stops that input. `std::nullopt` keeps it unchanged.
+Camera and Go Live can switch together with the video input:
+
+```cpp
+session.set_inputs(std::nullopt, discord::MediaInput{"audio=Microphone device name", "dshow"});
+session.set_inputs(discord::MediaInput{"desktop", "gdigrab"}, std::nullopt, false, true);
+session.set_inputs(discord::MediaInput{}, std::nullopt);
+```
+
+The session emits `sources_changed` after a replacement delivers frames and
+becomes active. If preparation fails, it emits `command_error` and keeps the
+current inputs.
 Live capture uses bounded native pipes and queues; it does not write an unbounded
 capture spool. Physical devices were not part of the supplied file-based live test.
 

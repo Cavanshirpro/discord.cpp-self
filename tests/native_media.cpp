@@ -207,6 +207,25 @@ int main(int argc, char **argv) {
             }
             require(video_frames >= 5 && audio_frames >= 5,
                     "Native capture pipes failed to deliver video/audio");
+            auto *const microphone = capture->live_audio.get();
+            capture->replace(Sources{}, true, false);
+            require(!capture->has_video() && capture->live_audio.get() == microphone,
+                    "Disabling video restarted or lost the active microphone");
+            capture_options.audio_source.clear();
+            auto camera = Sources::prepare(capture_options, cancel, [](const Json &) {});
+            capture->replace(std::move(*camera), true, false);
+            require(!capture->take_video(unused, true).empty() &&
+                        capture->live_audio.get() == microphone,
+                    "Live camera replacement interrupted the microphone");
+            capture_options.video_source = "invalid_fixture_filter";
+            bool rejected = false;
+            try {
+                Sources::prepare(capture_options, cancel, [](const Json &) {});
+            } catch (const Error &) {
+                rejected = true;
+            }
+            require(rejected && capture->has_video() && capture->live_audio.get() == microphone,
+                    "Unavailable replacement was treated as ready");
         }
         Recorder video_recorder(o, [&](const Json &e) { events.push_back(e); });
         auto video_dir = root / ("video-" + std::to_string(random32()));

@@ -103,9 +103,24 @@ void MediaSession::set_outputs(bool camera, bool go_live) {
 }
 void MediaSession::stop_recording() { command({{"op", "stop_recording"}}); }
 void MediaSession::set_sources(std::string video, std::string audio) {
-    if (video.find('\0') != std::string::npos || audio.find('\0') != std::string::npos)
-        throw std::invalid_argument("NUL in media source");
-    command({{"op", "set_sources"}, {"video_source", std::move(video)}, {"audio_source", std::move(audio)}});
+    set_inputs(MediaInput{std::move(video), {}}, MediaInput{std::move(audio), {}});
+}
+void MediaSession::set_inputs(std::optional<MediaInput> video, std::optional<MediaInput> audio,
+                              std::optional<bool> camera, std::optional<bool> go_live) {
+    Json update{{"op", "set_sources"}};
+    auto add = [&](const char *key, const std::optional<MediaInput> &input) {
+        if (!input)
+            return;
+        if (input->source.find('\0') != std::string::npos || input->format.find('\0') != std::string::npos)
+            throw std::invalid_argument("NUL in media source or format");
+        update[std::string(key) + "_source"] = input->source;
+        update[std::string(key) + "_format"] = input->source.empty() ? "" : input->format;
+    };
+    add("video", video);
+    add("audio", audio);
+    if (camera) update["camera"] = *camera;
+    if (go_live) update["go_live"] = *go_live;
+    command(std::move(update));
 }
 void MediaSession::join(Snowflake guild, Snowflake channel) {
     if (!guild || !channel)

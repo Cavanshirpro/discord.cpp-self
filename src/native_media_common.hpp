@@ -365,6 +365,8 @@ class Capture {
         const auto &format = video ? o.video_format : o.audio_format;
         if (format == "lavfi")
             args.push_back("-re");
+        if (format == "gdigrab")
+            args.insert(args.end(), {"-framerate", std::to_string(o.fps)});
         args.insert(args.end(), {"-f", format, "-i", video ? o.video_source : o.audio_source});
         std::vector<std::string> tail;
         if (video)
@@ -484,6 +486,20 @@ class Capture {
             }
         });
     }
+    void wait_ready(const std::atomic_bool &stop) {
+        const auto deadline = Clock::now() + std::chrono::seconds{8};
+        while (!stop && Clock::now() < deadline) {
+            {
+                std::lock_guard lock(mutex_);
+                if (failure_)
+                    std::rethrow_exception(failure_);
+                if (!packets_.empty())
+                    return;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds{20});
+        }
+        throw Error(stop ? "Capture stopped" : "Capture device did not deliver frames");
+    }
     Bytes take() {
         std::lock_guard lock(mutex_);
         if (failure_)
@@ -500,6 +516,16 @@ struct Sources {
     std::unique_ptr<Capture> live_video, live_audio;
     bool has_video() const { return live_video || !video.empty(); }
     bool has_audio() const { return live_audio || !audio.empty(); }
+    void replace(Sources &&prepared, bool change_video, bool change_audio) {
+        if (change_video) {
+            video = std::move(prepared.video);
+            live_video = std::move(prepared.live_video);
+        }
+        if (change_audio) {
+            audio = std::move(prepared.audio);
+            live_audio = std::move(prepared.live_audio);
+        }
+    }
     Bytes take_video(size_t &index, bool loop) {
         if (live_video)
             return live_video->take();
@@ -650,6 +676,8 @@ struct Sources {
                 pos = body;
             }
         }
+        if (result->live_video) result->live_video->wait_ready(stop);
+        if (result->live_audio) result->live_audio->wait_ready(stop);
         return result;
     }
 };
